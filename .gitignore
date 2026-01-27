@@ -1,0 +1,5 @@
+node_modules/
+.env
+rally.sqlite
+*.log
+.DS_Store
