@@ -3,4 +3,5 @@ node_modules/
 rally.sqlite
 *.log
 .DS_Store
-pacakge-lock.json
+rally.sqlite-shm
+rally.sqlite-wal

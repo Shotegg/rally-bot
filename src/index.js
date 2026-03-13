@@ -3,6 +3,7 @@ import { config } from './config.js';
 import { initDb } from './storage/db.js';
 import { rallyCommand } from './commands/rally/index.js';
 import { handleAllyTimingsButton, handleEnemyModeButton } from './components/allyTimingsButton.js';
+import { startKeepAlive } from './keep_alive.js';
 
 async function registerCommands() {
   const rest = new REST({ version: '10' }).setToken(config.token);
@@ -19,6 +20,7 @@ async function registerCommands() {
 }
 
 async function main() {
+  startKeepAlive();
   await initDb();
   await registerCommands();
 
