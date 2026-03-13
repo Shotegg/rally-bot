@@ -4,6 +4,10 @@ function normalizeTargets(targets) {
   return [...new Set((targets || []).map(t => String(t).trim()).filter(Boolean))];
 }
 
+function normalizeNames(names) {
+  return [...new Set((names || []).map(n => String(n).trim()).filter(Boolean))];
+}
+
 function toBool01(v) {
   return v ? 1 : 0;
 }
@@ -58,7 +62,8 @@ export const rallyRepo = {
       enabled: Boolean(row.enabled),
       default_target: row.default_target || '',
       targets: safeJsonParse(row.targets_json, []),
-      counter_targets: safeJsonParse(row.counter_targets_json, {})
+      counter_targets: safeJsonParse(row.counter_targets_json, {}),
+      enemy_allies: safeJsonParse(row.enemy_allies_json, [])
     };
   },
 
@@ -73,7 +78,8 @@ export const rallyRepo = {
       enabled: Boolean(r.enabled),
       default_target: r.default_target || '',
       targets: safeJsonParse(r.targets_json, []),
-      counter_targets: safeJsonParse(r.counter_targets_json, {})
+      counter_targets: safeJsonParse(r.counter_targets_json, {}),
+      enemy_allies: safeJsonParse(r.enemy_allies_json, [])
     }));
   },
 
@@ -108,6 +114,7 @@ export const rallyRepo = {
       default_target: r.default_target || '',
       targets: safeJsonParse(r.targets_json, []),
       counter_targets: safeJsonParse(r.counter_targets_json, {}),
+      enemy_allies: safeJsonParse(r.enemy_allies_json, []),
       travel_sec: (r.travel_sec == null ? null : Number(r.travel_sec))
     }));
   },
@@ -131,6 +138,7 @@ export const rallyRepo = {
       default_target: r.default_target || '',
       targets: safeJsonParse(r.targets_json, []),
       counter_targets: safeJsonParse(r.counter_targets_json, {}),
+      enemy_allies: safeJsonParse(r.enemy_allies_json, []),
       travel_sec: (r.travel_sec == null ? null : Number(r.travel_sec))
     }));
   },
@@ -154,6 +162,7 @@ export const rallyRepo = {
       default_target: r.default_target || '',
       targets: safeJsonParse(r.targets_json, []),
       counter_targets: safeJsonParse(r.counter_targets_json, {}),
+      enemy_allies: safeJsonParse(r.enemy_allies_json, []),
       travel_sec: (r.travel_sec == null ? null : Number(r.travel_sec))
     }));
   },
@@ -208,6 +217,31 @@ export const rallyRepo = {
     await run(
       `UPDATE creators SET counter_targets_json=? WHERE guild_id=? AND id=?`,
       [JSON.stringify(map || {}), guildId, creatorId]
+    );
+  },
+
+  async setEnemyAllies({ guildId, creatorId, allies }) {
+    const normalized = normalizeNames(allies);
+    await run(
+      `UPDATE creators SET enemy_allies_json=? WHERE guild_id=? AND id=?`,
+      [JSON.stringify(normalized), guildId, creatorId]
+    );
+  },
+
+  async setEnemyAlly({ guildId, creatorId, allyName, enabled }) {
+    const row = await get(
+      `SELECT enemy_allies_json FROM creators WHERE guild_id=? AND id=?`,
+      [guildId, creatorId]
+    );
+
+    const allies = normalizeNames(safeJsonParse(row?.enemy_allies_json, []));
+    const next = enabled
+      ? normalizeNames([...allies, allyName])
+      : allies.filter(name => name !== allyName);
+
+    await run(
+      `UPDATE creators SET enemy_allies_json=? WHERE guild_id=? AND id=?`,
+      [JSON.stringify(next), guildId, creatorId]
     );
   },
 

@@ -22,6 +22,7 @@ export async function initDb() {
       enabled INTEGER NOT NULL DEFAULT 1,
       default_target TEXT NOT NULL DEFAULT '',
       counter_targets_json TEXT NOT NULL DEFAULT '{}',
+      enemy_allies_json TEXT NOT NULL DEFAULT '[]',
       targets_json TEXT NOT NULL DEFAULT '[]',
       UNIQUE(guild_id, side, name)
     );
@@ -40,6 +41,7 @@ export async function initDb() {
   await ensureColumn('creators', 'enabled', `ALTER TABLE creators ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1`);
   await ensureColumn('creators', 'default_target', `ALTER TABLE creators ADD COLUMN default_target TEXT NOT NULL DEFAULT ''`);
   await ensureColumn('creators', 'counter_targets_json', `ALTER TABLE creators ADD COLUMN counter_targets_json TEXT NOT NULL DEFAULT '{}'`);
+  await ensureColumn('creators', 'enemy_allies_json', `ALTER TABLE creators ADD COLUMN enemy_allies_json TEXT NOT NULL DEFAULT '[]'`);
   await ensureColumn('creators', 'targets_json', `ALTER TABLE creators ADD COLUMN targets_json TEXT NOT NULL DEFAULT '[]'`);
 
   await ensureColumn('timings', 'travel_sec', `ALTER TABLE timings ADD COLUMN travel_sec INTEGER NOT NULL DEFAULT 0`);

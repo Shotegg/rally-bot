@@ -1,25 +1,96 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { rallyRepo } from '../storage/rallyRepo.js';
 import { calculateAgainstEnemy, formatUtcTime } from '../domain/calc.js';
 import { TARGETS } from '../domain/targets.js';
 import { resultEmbed } from '../ui/embeds.js';
 
+function buildEnemyMatrixPayload({ enemies, start, mode }) {
+  const pageEnemies = enemies.slice(start, start + 5);
+  const rows = pageEnemies.map((enemy) => {
+    const row = [];
+    TARGETS.forEach((_, targetIndex) => {
+      row.push({
+        customId: `enemyCalc:${mode}:${enemy.id}:${targetIndex}`,
+        label: enemy.name
+      });
+    });
+    return row;
+  });
+
+  const shownCount = Math.min(start + pageEnemies.length, enemies.length);
+  return { rows, shownCount };
+}
+
+async function sendModeMatrixFollowUps(interaction, mode) {
+  const guildId = interaction.guildId;
+  const enemies = await rallyRepo.listCreators({ guildId, side: 'enemy' });
+  if (!enemies.length) {
+    await interaction.reply({ content: 'No enemies found.', ephemeral: true });
+    return;
+  }
+
+  await interaction.reply({
+    content: `Mode selected: **${mode === 'enemy' ? 'counter by enemy' : 'counter by target'}**`,
+    ephemeral: true
+  });
+
+  for (let start = 0; start < enemies.length; start += 5) {
+    const { rows, shownCount } = buildEnemyMatrixPayload({ enemies, start, mode });
+    const components = rows.map((row) => new ActionRowBuilder().addComponents(
+      ...row.map((btn) => (
+        new ButtonBuilder()
+          .setCustomId(btn.customId)
+          .setLabel(btn.label)
+          .setStyle(ButtonStyle.Primary)
+      ))
+    ));
+
+    await interaction.followUp({
+      embeds: [resultEmbed({
+        title: 'Enemies matrix (row = enemy, column = target)',
+        lines: [
+          '```',
+          '            Turret 1  Turret 2  Turret 3  Turret 4  Castle',
+          'enemy',
+          '```',
+          `shown: **${shownCount}/${enemies.length}**`
+        ]
+      })],
+      components,
+      ephemeral: true
+    });
+  }
+}
+
+export async function handleEnemyModeButton(interaction) {
+  const mode = interaction.customId.split(':')[1];
+  if (mode !== 'target' && mode !== 'enemy') {
+    await interaction.reply({ content: 'Invalid mode.', ephemeral: true });
+    return;
+  }
+  await sendModeMatrixFollowUps(interaction, mode);
+}
+
 export async function handleAllyTimingsButton(interaction) {
   const guildId = interaction.guildId;
   const parts = interaction.customId.split(':');
-  const enemyId = Number(parts[1]);
-  const selectedTarget = parts[2] ? decodeURIComponent(parts[2]) : '';
+  const hasMode = parts.length >= 4 && (parts[1] === 'target' || parts[1] === 'enemy');
+  const mode = hasMode ? parts[1] : 'target';
+  const enemyId = Number(hasMode ? parts[2] : parts[1]);
+  const targetIndex = Number(hasMode ? parts[3] : parts[2]);
 
   const enemies = await rallyRepo.listCreators({ guildId, side: 'enemy' });
   const enemy = enemies.find(e => e.id === enemyId);
   if (!enemy) {
-    await interaction.reply({ content: 'Enemy not found.', ephemeral: true });
+    await interaction.reply({ content: 'Enemy not found.' });
     return;
   }
 
-  const target = selectedTarget || enemy.default_target;
+  const target = Number.isInteger(targetIndex) && targetIndex >= 0 && targetIndex < TARGETS.length
+    ? TARGETS[targetIndex]
+    : '';
   if (!target) {
-    await interaction.reply({ content: `Enemy ${enemy.name} has no target selected.`, ephemeral: true });
+    await interaction.reply({ content: 'Invalid target.' });
     return;
   }
 
@@ -30,7 +101,7 @@ export async function handleAllyTimingsButton(interaction) {
   }).then(rows => rows.filter(r => r.id === enemy.id));
 
   if (!enemyTiming || !Number.isFinite(enemyTiming.travel_sec)) {
-    await interaction.reply({ content: `Enemy ${enemy.name} has no timing for ${target}.`, ephemeral: true });
+    await interaction.reply({ content: `Enemy ${enemy.name} has no timing for ${target}.` });
     return;
   }
 
@@ -40,11 +111,17 @@ export async function handleAllyTimingsButton(interaction) {
     target
   });
 
+  const selectedAllyNames = mode === 'enemy'
+    ? new Set((enemy.enemy_allies || []).map(name => String(name).trim()).filter(Boolean))
+    : null;
+
   const enriched = allies.map(a => ({
     name: a.name,
     enabled: a.enabled,
     travel_sec: a.travel_sec,
-    counter_enabled: Boolean(a.counter_targets?.[target])
+    counter_enabled: mode === 'enemy'
+      ? selectedAllyNames.has(a.name)
+      : Boolean(a.counter_targets?.[target])
   }));
 
   const now = new Date();
@@ -54,44 +131,15 @@ export async function handleAllyTimingsButton(interaction) {
     allies: enriched
   });
 
-  const lines = results.length
-    ? results.map(r => `**${r.name}** -> **${formatUtcTime(r.time)}** -> **${r.target}**`)
-    : ['(no results)'];
-
-  await interaction.reply({
-    embeds: [resultEmbed({ title: `Ally timings vs ${enemy.name} (UTC)`, lines })]
-  });
-}
-
-export async function handleEnemyTargetSelect(interaction) {
-  const guildId = interaction.guildId;
-  const target = interaction.values?.[0] || '';
-
-  const enemies = await rallyRepo.listCreators({ guildId, side: 'enemy' });
-  if (!enemies.length) {
-    await interaction.update({ content: 'No enemies found.', components: [] });
+  if (!results.length) {
+    await interaction.reply({ content: `(no results) for ${enemy.name} @ ${target}` });
     return;
   }
 
-  const targetMenu = new StringSelectMenuBuilder()
-    .setCustomId('enemyTargetSelect')
-    .setPlaceholder('Select target')
-    .addOptions(TARGETS.map(t => ({ label: t, value: t, default: t === target })));
+  const toLine = (r) => `**${r.name}** -> **${formatUtcTime(r.time)}** -> **${r.target}**`;
 
-  const selectRow = new ActionRowBuilder().addComponents(targetMenu);
-
-  const buttons = enemies.slice(0, 5).map(e =>
-    new ButtonBuilder()
-      .setCustomId(`enemyCalc:${e.id}:${encodeURIComponent(target)}`)
-      .setLabel(e.name)
-      .setStyle(ButtonStyle.Primary)
-  );
-
-  const actionRow = new ActionRowBuilder().addComponents(buttons);
-
-  await interaction.update({
-    embeds: [resultEmbed({ title: `Enemies (target: ${target})`, lines: enemies.map(e => `**${e.name}**`) })],
-    components: [selectRow, actionRow],
-    ephemeral: true
-  });
+  await interaction.reply({ content: toLine(results[0]) });
+  for (let i = 1; i < results.length; i += 1) {
+    await interaction.followUp({ content: toLine(results[i]) });
+  }
 }
