@@ -6,11 +6,11 @@ import { addSideOption, addTargetOption } from './shared.js';
 export function registerAdd(builder) {
   builder.addSubcommand(sc => {
     sc.setName('add')
-      .setDescription('Add/update creator (ally/enemy)')
-      .addUserOption(o => o.setName('user').setDescription('Discord user to mention in results').setRequired(false))
-      .addStringOption(o => o.setName('name').setDescription('Creator name (fallback/manual)').setRequired(false));
+      .setDescription('Add/update creator (ally/enemy)');
 
     addSideOption(sc);
+    sc.addUserOption(o => o.setName('user').setDescription('Discord user to mention in results').setRequired(false))
+      .addStringOption(o => o.setName('name').setDescription('Creator name (fallback/manual)').setRequired(false));
     sc.addIntegerOption(o => o.setName('buffer_sec').setDescription('Buffer seconds (optional)').setRequired(false))
       .addBooleanOption(o => o.setName('enabled').setDescription('Include in calculate').setRequired(false));
     addTargetOption(sc, { required: false, name: 'default_target', description: 'Default target for calculate' });
