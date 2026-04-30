@@ -13,6 +13,7 @@ import { registerCalculate, handleCalculate } from './calculate.js';
 import { registerExport, handleExport } from './export.js';
 import { registerImport, handleImport } from './import.js';
 import { registerEnemies, handleEnemies } from './enemies.js';
+import { registerHelp, handleHelp } from './help.js';
 
 const data = new SlashCommandBuilder()
   .setName('rally')
@@ -31,6 +32,7 @@ registerCalculate(data);
 registerExport(data);
 registerImport(data);
 registerEnemies(data);
+registerHelp(data);
 
 const handlers = new Map([
   ['add', handleAdd],
@@ -45,7 +47,8 @@ const handlers = new Map([
   ['calculate', handleCalculate],
   ['export', handleExport],
   ['import', handleImport],
-  ['enemies', handleEnemies]
+  ['enemies', handleEnemies],
+  ['help', handleHelp]
 ]);
 
 export const rallyCommand = {

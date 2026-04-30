@@ -136,10 +136,10 @@ export async function handleAllyTimingsButton(interaction) {
     return;
   }
 
-  const toLine = (r) => `**${r.name}** -> **${formatUtcTime(r.time)}** -> **${r.target}**`;
+  const toLine = (r) => `${r.name} -> ${formatUtcTime(r.time)} -> ${r.target}`;
 
-  await interaction.reply({ content: toLine(results[0]) });
+  await interaction.reply({ content: toLine(results[0]), allowedMentions: { parse: ['users'] } });
   for (let i = 1; i < results.length; i += 1) {
-    await interaction.followUp({ content: toLine(results[i]) });
+    await interaction.followUp({ content: toLine(results[i]), allowedMentions: { parse: ['users'] } });
   }
 }

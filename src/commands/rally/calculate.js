@@ -1,6 +1,5 @@
 import { rallyRepo } from '../../storage/rallyRepo.js';
 import { calculateAllSendTimes, formatUtcTime } from '../../domain/calc.js';
-import { resultEmbed } from '../../ui/embeds.js';
 import { addTargetOption } from './shared.js';
 
 export function registerCalculate(builder) {
@@ -27,10 +26,11 @@ export async function handleCalculate(interaction) {
   });
 
   const lines = results.length
-    ? results.map(r => `**${r.name}** -> **${formatUtcTime(r.time)}** -> **${r.target}**`)
+    ? results.map(r => `${r.name} -> ${formatUtcTime(r.time)} -> ${r.target}`)
     : ['(no results)'];
 
   await interaction.reply({
-    embeds: [resultEmbed({ title: `Results (UTC)${targetFilter ? ` @ ${targetFilter}` : ''}`, lines })]
+    content: `Results (UTC)${targetFilter ? ` @ ${targetFilter}` : ''}\n${lines.join('\n')}`,
+    allowedMentions: { parse: ['users'] }
   });
 }

@@ -35,6 +35,11 @@ export async function handleAdd(interaction) {
     defaultTarget
   });
 
+  const looksLikePlainAt = /^@[^<\s].+/.test(creator.name) && !/^<@!?\d+>$/.test(creator.name);
+  const mentionHint = looksLikePlainAt
+    ? 'warning: plain `@username` text will not ping. Use a real mention token like `<@123456789012345678>`.'
+    : null;
+
   await interaction.reply({
     embeds: [resultEmbed({
       title: `Saved ${side}: ${creator.name}`,
@@ -42,7 +47,8 @@ export async function handleAdd(interaction) {
         `enabled: **${creator.enabled ? 'yes' : 'no'}**`,
         `buffer: **${creator.buffer_sec}s**`,
         `default target: **${creator.default_target || '(none)'}**`,
-        `targets: ${TARGETS.join(', ')}`
+        `targets: ${TARGETS.join(', ')}`,
+        ...(mentionHint ? [mentionHint] : [])
       ]
     })],
     ephemeral: true
