@@ -7,7 +7,8 @@ export function registerAdd(builder) {
   builder.addSubcommand(sc => {
     sc.setName('add')
       .setDescription('Add/update creator (ally/enemy)')
-      .addStringOption(o => o.setName('name').setDescription('Creator name').setRequired(true));
+      .addUserOption(o => o.setName('user').setDescription('Discord user to mention in results').setRequired(false))
+      .addStringOption(o => o.setName('name').setDescription('Creator name (fallback/manual)').setRequired(false));
 
     addSideOption(sc);
     sc.addIntegerOption(o => o.setName('buffer_sec').setDescription('Buffer seconds (optional)').setRequired(false))
@@ -20,10 +21,20 @@ export function registerAdd(builder) {
 export async function handleAdd(interaction) {
   const guildId = interaction.guildId;
   const side = interaction.options.getString('side', true);
-  const name = interaction.options.getString('name', true);
+  const pickedUser = interaction.options.getUser('user');
+  const manualName = interaction.options.getString('name');
+  const name = pickedUser ? `<@${pickedUser.id}>` : (manualName ? manualName.trim() : '');
   const bufferSec = interaction.options.getInteger('buffer_sec') ?? 0;
   const defaultTarget = interaction.options.getString('default_target') || '';
   const enabled = interaction.options.getBoolean('enabled');
+
+  if (!name) {
+    await interaction.reply({
+      content: 'You must provide either `user` or `name`.',
+      ephemeral: true
+    });
+    return;
+  }
 
   const creator = await rallyRepo.upsertCreator({
     guildId,
