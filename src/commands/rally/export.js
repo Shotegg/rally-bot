@@ -1,7 +1,12 @@
 import { AttachmentBuilder } from 'discord.js';
 
 import { rallyRepo } from '../../storage/rallyRepo.js';
-import { TARGETS, NO_TARGET } from '../../domain/targets.js';
+import { TARGETS, NO_TARGET, TARGET_ALIASES } from '../../domain/targets.js';
+
+function legacyTargetName(target) {
+  const match = Object.entries(TARGET_ALIASES).find(([, current]) => current === target);
+  return match ? match[0] : target;
+}
 
 function makeExportPayload(creators, timings) {
   const timingMap = new Map();
@@ -13,7 +18,7 @@ function makeExportPayload(creators, timings) {
   return creators.map(c => {
     const counterTargets = {};
     TARGETS.forEach(t => {
-      counterTargets[t] = Boolean(c.counter_targets?.[t]);
+      counterTargets[legacyTargetName(t)] = Boolean(c.counter_targets?.[t]);
     });
 
     const boxes = {};
@@ -21,14 +26,14 @@ function makeExportPayload(creators, timings) {
       const travelSec = timingMap.get(`${c.id}:${t}`) ?? 0;
       const min = Math.floor(travelSec / 60);
       const sec = travelSec % 60;
-      boxes[t] = { min, sec };
+      boxes[legacyTargetName(t)] = { min, sec };
     });
 
     return {
       type: c.side,
       name: c.name,
       enabled: Boolean(c.enabled),
-      target: c.default_target || NO_TARGET,
+      target: c.default_target ? legacyTargetName(c.default_target) : NO_TARGET,
       buffer: c.buffer_sec ?? 0,
       counterTargets,
       enemyAllies: Array.isArray(c.enemy_allies) ? c.enemy_allies : [],
@@ -51,15 +56,6 @@ export async function handleExport(interaction) {
   const timings = await rallyRepo.listAllTimings({ guildId });
   const payload = JSON.stringify(makeExportPayload([...allies, ...enemies], timings), null, 2);
   const filename = `rally-export-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
-
-  if (payload.length > 1800) {
-    const file = new AttachmentBuilder(Buffer.from(payload, 'utf8'), { name: filename });
-    await interaction.reply({ content: 'Export file:', files: [file], ephemeral: true });
-    return;
-  }
-
-  await interaction.reply({
-    content: `\`\`\`json\n${payload}\n\`\`\``,
-    ephemeral: true
-  });
+  const file = new AttachmentBuilder(Buffer.from(payload, 'utf8'), { name: filename });
+  await interaction.reply({ content: 'Export file:', files: [file], ephemeral: true });
 }

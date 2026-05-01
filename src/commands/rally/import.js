@@ -1,5 +1,17 @@
 import { rallyRepo } from '../../storage/rallyRepo.js';
-import { TARGETS, NO_TARGET } from '../../domain/targets.js';
+import { TARGETS, NO_TARGET, normalizeTargetName } from '../../domain/targets.js';
+
+function normalizeTargetMap(input) {
+  const out = {};
+  if (!input || typeof input !== 'object') return out;
+
+  Object.entries(input).forEach(([rawKey, value]) => {
+    const normalized = normalizeTargetName(rawKey);
+    if (normalized) out[normalized] = value;
+  });
+
+  return out;
+}
 
 export function registerImport(builder) {
   builder.addSubcommand(sc =>
@@ -24,7 +36,9 @@ export async function handleImport(interaction) {
     for (const entry of data) {
       if (!entry || !entry.name || !entry.type) continue;
       const side = entry.type === 'enemy' ? 'enemy' : 'ally';
-      const defaultTarget = entry.target && entry.target !== NO_TARGET ? entry.target : '';
+      const defaultTarget = entry.target && entry.target !== NO_TARGET
+        ? normalizeTargetName(entry.target)
+        : '';
       const bufferSec = Number(entry.buffer ?? 0) || 0;
       const enabled = entry.enabled !== false;
 
@@ -38,9 +52,10 @@ export async function handleImport(interaction) {
         defaultTarget
       });
 
+      const normalizedCounterTargets = normalizeTargetMap(entry.counterTargets);
       const counterTargets = {};
       TARGETS.forEach(t => {
-        counterTargets[t] = Boolean(entry.counterTargets?.[t]);
+        counterTargets[t] = Boolean(normalizedCounterTargets[t]);
       });
 
       await rallyRepo.setCounterTargetsMap({ guildId, creatorId: creator.id, map: counterTargets });
@@ -50,7 +65,7 @@ export async function handleImport(interaction) {
         allies: side === 'enemy' ? (Array.isArray(entry.enemyAllies) ? entry.enemyAllies : []) : []
       });
 
-      const boxes = entry.boxes || {};
+      const boxes = normalizeTargetMap(entry.boxes);
       for (const target of TARGETS) {
         const box = boxes[target];
         if (!box) continue;
