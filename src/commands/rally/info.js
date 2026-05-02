@@ -2,12 +2,13 @@ import { rallyRepo } from '../../storage/rallyRepo.js';
 import { resultEmbed } from '../../ui/embeds.js';
 import { TARGETS } from '../../domain/targets.js';
 import { addSideOption } from './shared.js';
+import { buildCreatorQuickActionRows } from '../../components/creatorQuickActions.js';
 
 export function registerInfo(builder) {
   builder.addSubcommand(sc => {
     sc.setName('info')
       .setDescription('Show creator details')
-      .addStringOption(o => o.setName('name').setDescription('Creator name').setRequired(true));
+      .addStringOption(o => o.setName('name').setDescription('Creator name').setRequired(true).setAutocomplete(true));
 
     addSideOption(sc);
     return sc;
@@ -38,6 +39,7 @@ export async function handleInfo(interaction) {
           : [])
       ]
     })],
+    components: buildCreatorQuickActionRows({ side, creator }),
     ephemeral: true
   });
 }

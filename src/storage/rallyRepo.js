@@ -83,6 +83,23 @@ export const rallyRepo = {
     }));
   },
 
+  async getCreatorById({ guildId, creatorId }) {
+    const row = await get(
+      `SELECT * FROM creators WHERE guild_id=? AND id=?`,
+      [guildId, creatorId]
+    );
+    if (!row) return null;
+
+    return {
+      ...row,
+      enabled: Boolean(row.enabled),
+      default_target: row.default_target || '',
+      targets: safeJsonParse(row.targets_json, []),
+      counter_targets: safeJsonParse(row.counter_targets_json, {}),
+      enemy_allies: safeJsonParse(row.enemy_allies_json, [])
+    };
+  },
+
   async setTiming({ guildId, creatorId, target, travelSec }) {
     await run(
       `

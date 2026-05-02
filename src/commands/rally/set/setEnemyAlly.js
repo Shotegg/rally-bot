@@ -5,8 +5,8 @@ export function registerSetEnemyAlly(builder) {
   builder.addSubcommand(sc =>
     sc.setName('set-enemy-ally')
       .setDescription('Enable/disable one ally for enemy-counter mode')
-      .addStringOption(o => o.setName('enemy').setDescription('Enemy name').setRequired(true))
-      .addStringOption(o => o.setName('ally').setDescription('Ally name').setRequired(true))
+      .addStringOption(o => o.setName('enemy').setDescription('Enemy name').setRequired(true).setAutocomplete(true))
+      .addStringOption(o => o.setName('ally').setDescription('Ally name').setRequired(true).setAutocomplete(true))
       .addBooleanOption(o => o.setName('enabled').setDescription('true/false').setRequired(true))
   );
 }

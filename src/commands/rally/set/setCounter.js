@@ -10,6 +10,7 @@ export function registerSetCounter(builder) {
         o.setName('name')
           .setDescription('Ally name')
           .setRequired(true)
+          .setAutocomplete(true)
       )
       .addBooleanOption(o => o.setName('enabled').setDescription('true/false').setRequired(true));
 

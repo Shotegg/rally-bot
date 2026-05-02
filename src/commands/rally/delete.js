@@ -5,7 +5,7 @@ export function registerDelete(builder) {
   builder.addSubcommand(sc => {
     sc.setName('delete')
       .setDescription('Delete a creator by name')
-      .addStringOption(o => o.setName('name').setDescription('Creator name').setRequired(true));
+      .addStringOption(o => o.setName('name').setDescription('Creator name').setRequired(true).setAutocomplete(true));
 
     addSideOption(sc);
     return sc;

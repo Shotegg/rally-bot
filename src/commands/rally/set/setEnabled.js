@@ -6,7 +6,7 @@ export function registerSetEnabled(builder) {
   builder.addSubcommand(sc => {
     sc.setName('set-enabled')
       .setDescription('Include/exclude a creator in calculate')
-      .addStringOption(o => o.setName('name').setDescription('Creator name').setRequired(true))
+      .addStringOption(o => o.setName('name').setDescription('Creator name').setRequired(true).setAutocomplete(true))
       .addBooleanOption(o => o.setName('enabled').setDescription('true/false').setRequired(true));
 
     addSideOption(sc);

@@ -6,7 +6,7 @@ export function registerSetTarget(builder) {
   builder.addSubcommand(sc => {
     sc.setName('set-target')
       .setDescription('Set default target for calculate')
-      .addStringOption(o => o.setName('name').setDescription('Creator name').setRequired(true));
+      .addStringOption(o => o.setName('name').setDescription('Creator name').setRequired(true).setAutocomplete(true));
 
     addSideOption(sc);
     addTargetOption(sc);

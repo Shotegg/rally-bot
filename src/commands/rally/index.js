@@ -14,6 +14,7 @@ import { registerExport, handleExport } from './export.js';
 import { registerImport, handleImport } from './import.js';
 import { registerEnemies, handleEnemies } from './enemies.js';
 import { registerHelp, handleHelp } from './help.js';
+import { rallyRepo } from '../../storage/rallyRepo.js';
 
 const data = new SlashCommandBuilder()
   .setName('rally')
@@ -62,5 +63,36 @@ export const rallyCommand = {
     }
 
     await handler(interaction);
+  },
+  async autocomplete(interaction) {
+    const focused = interaction.options.getFocused(true);
+    if (!focused || !['name', 'enemy', 'ally'].includes(focused.name)) {
+      await interaction.respond([]);
+      return;
+    }
+
+    const sub = interaction.options.getSubcommand();
+    const guildId = interaction.guildId;
+    const query = String(focused.value || '').toLowerCase().trim();
+
+    const sideByField = {
+      name: (() => {
+        if (sub === 'set-counter') return 'ally';
+        const optSide = interaction.options.getString('side');
+        return optSide === 'enemy' ? 'enemy' : 'ally';
+      })(),
+      enemy: 'enemy',
+      ally: 'ally'
+    };
+
+    const side = sideByField[focused.name];
+    const creators = await rallyRepo.listCreators({ guildId, side });
+    const choices = creators
+      .map(c => c.name)
+      .filter(name => !query || name.toLowerCase().includes(query))
+      .slice(0, 25)
+      .map(name => ({ name: name.slice(0, 100), value: name.slice(0, 100) }));
+
+    await interaction.respond(choices);
   }
 };

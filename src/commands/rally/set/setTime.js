@@ -11,7 +11,7 @@ export function registerSetTime(builder) {
   builder.addSubcommand(sc => {
     sc.setName('set-time')
       .setDescription('Set travel time for a creator + target')
-      .addStringOption(o => o.setName('name').setDescription('Creator name').setRequired(true))
+      .addStringOption(o => o.setName('name').setDescription('Creator name').setRequired(true).setAutocomplete(true))
       .addIntegerOption(o => o.setName('min').setDescription('Minutes').setRequired(true))
       .addIntegerOption(o => o.setName('sec').setDescription('Seconds').setRequired(true));
 
