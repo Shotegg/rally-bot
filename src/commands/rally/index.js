@@ -88,10 +88,20 @@ export const rallyCommand = {
     const side = sideByField[focused.name];
     const creators = await rallyRepo.listCreators({ guildId, side });
     const choices = creators
-      .map(c => c.name)
-      .filter(name => !query || name.toLowerCase().includes(query))
+      .filter(c => {
+        const nameHit = c.name.toLowerCase().includes(query);
+        const displayHit = (c.display_name || '').toLowerCase().includes(query);
+        const idHit = (c.discord_user_id || '').toLowerCase().includes(query);
+        return !query || nameHit || displayHit || idHit;
+      })
       .slice(0, 25)
-      .map(name => ({ name: name.slice(0, 100), value: name.slice(0, 100) }));
+      .map(c => {
+        const labelCore = c.display_name && c.display_name !== c.name
+          ? `${c.display_name} (${c.name})`
+          : c.name;
+        const label = c.discord_user_id ? `${labelCore} [${c.discord_user_id}]` : labelCore;
+        return { name: label.slice(0, 100), value: c.name.slice(0, 100) };
+      });
 
     try {
       await interaction.respond(choices);

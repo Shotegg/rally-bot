@@ -10,7 +10,8 @@ export function registerAdd(builder) {
 
     addSideOption(sc);
     sc.addUserOption(o => o.setName('user').setDescription('Discord user to mention in results').setRequired(false))
-      .addStringOption(o => o.setName('name').setDescription('Creator name (fallback/manual)').setRequired(false));
+      .addStringOption(o => o.setName('name').setDescription('Creator name (fallback/manual)').setRequired(false))
+      .addStringOption(o => o.setName('nickname').setDescription('Friendly display name (optional)').setRequired(false));
     sc.addIntegerOption(o => o.setName('buffer_sec').setDescription('Buffer seconds (optional)').setRequired(false))
       .addBooleanOption(o => o.setName('enabled').setDescription('Include in calculate').setRequired(false));
     addTargetOption(sc, { required: false, name: 'default_target', description: 'Default target for calculate' });
@@ -23,7 +24,10 @@ export async function handleAdd(interaction) {
   const side = interaction.options.getString('side', true);
   const pickedUser = interaction.options.getUser('user');
   const manualName = interaction.options.getString('name');
+  const nickname = (interaction.options.getString('nickname') || '').trim();
   const name = pickedUser ? `<@${pickedUser.id}>` : (manualName ? manualName.trim() : '');
+  const displayName = nickname || (pickedUser ? (pickedUser.globalName || pickedUser.username) : name);
+  const discordUserId = pickedUser?.id || '';
   const bufferSec = interaction.options.getInteger('buffer_sec') ?? 0;
   const defaultTarget = interaction.options.getString('default_target') || '';
   const enabled = interaction.options.getBoolean('enabled');
@@ -40,6 +44,8 @@ export async function handleAdd(interaction) {
     guildId,
     side,
     name,
+    displayName,
+    discordUserId,
     targets: TARGETS,
     bufferSec,
     enabled: enabled ?? true,
@@ -53,8 +59,10 @@ export async function handleAdd(interaction) {
 
   await interaction.reply({
     embeds: [resultEmbed({
-      title: `Saved ${side}: ${creator.name}`,
+      title: `Saved ${side}: ${creator.display_name || creator.name}`,
       lines: [
+        `creator key: **${creator.name}**`,
+        `display name: **${creator.display_name || creator.name}**`,
         `enabled: **${creator.enabled ? 'yes' : 'no'}**`,
         `buffer: **${creator.buffer_sec}s**`,
         `default target: **${creator.default_target || '(none)'}**`,

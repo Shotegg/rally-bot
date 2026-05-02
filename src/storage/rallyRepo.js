@@ -21,11 +21,26 @@ function safeJsonParse(value, fallback) {
   }
 }
 
+function mapCreatorRow(row) {
+  return {
+    ...row,
+    enabled: Boolean(row.enabled),
+    display_name: row.display_name || row.name || '',
+    discord_user_id: row.discord_user_id || '',
+    default_target: row.default_target || '',
+    targets: safeJsonParse(row.targets_json, []),
+    counter_targets: safeJsonParse(row.counter_targets_json, {}),
+    enemy_allies: safeJsonParse(row.enemy_allies_json, [])
+  };
+}
+
 export const rallyRepo = {
   async upsertCreator({
     guildId,
     side,
     name,
+    displayName = '',
+    discordUserId = '',
     targets = [],
     bufferSec = 0,
     enabled = true,
@@ -35,16 +50,18 @@ export const rallyRepo = {
 
     await run(
       `
-      INSERT INTO creators (guild_id, side, name, buffer_sec, enabled, default_target, targets_json)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO creators (guild_id, side, name, display_name, discord_user_id, buffer_sec, enabled, default_target, targets_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(guild_id, side, name)
       DO UPDATE SET
+        display_name=excluded.display_name,
+        discord_user_id=excluded.discord_user_id,
         buffer_sec=excluded.buffer_sec,
         enabled=excluded.enabled,
         default_target=excluded.default_target,
         targets_json=excluded.targets_json
       `,
-      [guildId, side, name, bufferSec, toBool01(enabled), defaultTarget, JSON.stringify(t)]
+      [guildId, side, name, displayName || name, discordUserId || '', bufferSec, toBool01(enabled), defaultTarget, JSON.stringify(t)]
     );
 
     return this.getCreatorByName({ guildId, side, name });
@@ -56,15 +73,7 @@ export const rallyRepo = {
       [guildId, side, name]
     );
     if (!row) return null;
-
-    return {
-      ...row,
-      enabled: Boolean(row.enabled),
-      default_target: row.default_target || '',
-      targets: safeJsonParse(row.targets_json, []),
-      counter_targets: safeJsonParse(row.counter_targets_json, {}),
-      enemy_allies: safeJsonParse(row.enemy_allies_json, [])
-    };
+    return mapCreatorRow(row);
   },
 
   async listCreators({ guildId, side }) {
@@ -73,14 +82,7 @@ export const rallyRepo = {
       [guildId, side]
     );
 
-    return rows.map(r => ({
-      ...r,
-      enabled: Boolean(r.enabled),
-      default_target: r.default_target || '',
-      targets: safeJsonParse(r.targets_json, []),
-      counter_targets: safeJsonParse(r.counter_targets_json, {}),
-      enemy_allies: safeJsonParse(r.enemy_allies_json, [])
-    }));
+    return rows.map(mapCreatorRow);
   },
 
   async getCreatorById({ guildId, creatorId }) {
@@ -89,15 +91,7 @@ export const rallyRepo = {
       [guildId, creatorId]
     );
     if (!row) return null;
-
-    return {
-      ...row,
-      enabled: Boolean(row.enabled),
-      default_target: row.default_target || '',
-      targets: safeJsonParse(row.targets_json, []),
-      counter_targets: safeJsonParse(row.counter_targets_json, {}),
-      enemy_allies: safeJsonParse(row.enemy_allies_json, [])
-    };
+    return mapCreatorRow(row);
   },
 
   async setTiming({ guildId, creatorId, target, travelSec }) {
@@ -126,12 +120,7 @@ export const rallyRepo = {
     );
 
     return rows.map(r => ({
-      ...r,
-      enabled: Boolean(r.enabled),
-      default_target: r.default_target || '',
-      targets: safeJsonParse(r.targets_json, []),
-      counter_targets: safeJsonParse(r.counter_targets_json, {}),
-      enemy_allies: safeJsonParse(r.enemy_allies_json, []),
+      ...mapCreatorRow(r),
       travel_sec: (r.travel_sec == null ? null : Number(r.travel_sec))
     }));
   },
@@ -150,12 +139,7 @@ export const rallyRepo = {
     );
 
     return rows.map(r => ({
-      ...r,
-      enabled: Boolean(r.enabled),
-      default_target: r.default_target || '',
-      targets: safeJsonParse(r.targets_json, []),
-      counter_targets: safeJsonParse(r.counter_targets_json, {}),
-      enemy_allies: safeJsonParse(r.enemy_allies_json, []),
+      ...mapCreatorRow(r),
       travel_sec: (r.travel_sec == null ? null : Number(r.travel_sec))
     }));
   },
@@ -174,12 +158,7 @@ export const rallyRepo = {
     );
 
     return rows.map(r => ({
-      ...r,
-      enabled: Boolean(r.enabled),
-      default_target: r.default_target || '',
-      targets: safeJsonParse(r.targets_json, []),
-      counter_targets: safeJsonParse(r.counter_targets_json, {}),
-      enemy_allies: safeJsonParse(r.enemy_allies_json, []),
+      ...mapCreatorRow(r),
       travel_sec: (r.travel_sec == null ? null : Number(r.travel_sec))
     }));
   },
@@ -196,6 +175,21 @@ export const rallyRepo = {
 
     return rows.map(r => ({
       creator_id: r.creator_id,
+      target: r.target,
+      travel_sec: (r.travel_sec == null ? null : Number(r.travel_sec))
+    }));
+  },
+
+  async listTimingsForCreator({ guildId, creatorId }) {
+    const rows = await all(
+      `
+      SELECT target, travel_sec
+      FROM timings
+      WHERE guild_id=? AND creator_id=?
+      `,
+      [guildId, creatorId]
+    );
+    return rows.map(r => ({
       target: r.target,
       travel_sec: (r.travel_sec == null ? null : Number(r.travel_sec))
     }));
