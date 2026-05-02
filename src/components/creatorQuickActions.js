@@ -64,7 +64,7 @@ export async function handleCreatorQuickActionButton(interaction) {
       .setTitle(`Set target: ${creator.name.slice(0, 45)}`);
     const targetInput = new TextInputBuilder()
       .setCustomId('target')
-      .setLabel(`Target (${TARGETS.join(', ')})`)
+      .setLabel('Target')
       .setStyle(TextInputStyle.Short)
       .setRequired(true)
       .setValue(creator.default_target || '');
@@ -79,7 +79,7 @@ export async function handleCreatorQuickActionButton(interaction) {
       .setTitle(`Set time: ${creator.name.slice(0, 45)}`);
     const targetInput = new TextInputBuilder()
       .setCustomId('target')
-      .setLabel(`Target (${TARGETS.join(', ')})`)
+      .setLabel('Target')
       .setStyle(TextInputStyle.Short)
       .setRequired(true)
       .setValue(creator.default_target || TARGETS[0] || '');
