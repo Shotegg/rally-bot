@@ -72,12 +72,17 @@ async function main() {
       }
     } catch (err) {
       console.error(err);
+      if (interaction.isAutocomplete()) return;
       const msg = 'Something went wrong. Check console logs.';
       if (interaction.isRepliable()) {
-        if (interaction.deferred || interaction.replied) {
-          await interaction.followUp({ content: msg, ephemeral: true });
-        } else {
-          await interaction.reply({ content: msg, ephemeral: true });
+        try {
+          if (interaction.deferred || interaction.replied) {
+            await interaction.followUp({ content: msg, ephemeral: true });
+          } else {
+            await interaction.reply({ content: msg, ephemeral: true });
+          }
+        } catch (replyErr) {
+          console.error(replyErr);
         }
       }
     }

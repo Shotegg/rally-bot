@@ -51,23 +51,15 @@ export async function handleCreatorQuickActionButton(interaction) {
   if (!parsed) return false;
 
   const { action, side, creatorId } = parsed;
-  const guildId = interaction.guildId;
-  const creator = await rallyRepo.getCreatorById({ guildId, creatorId });
-  if (!creator || creator.side !== side) {
-    await interaction.reply({ content: 'Creator not found.', ephemeral: true });
-    return true;
-  }
-
   if (action === 'set-target') {
     const modal = new ModalBuilder()
       .setCustomId(`creatorModal:set-target:${side}:${creatorId}`)
-      .setTitle(`Set target: ${creator.name.slice(0, 45)}`);
+      .setTitle('Set target');
     const targetInput = new TextInputBuilder()
       .setCustomId('target')
       .setLabel('Target')
       .setStyle(TextInputStyle.Short)
-      .setRequired(true)
-      .setValue(creator.default_target || '');
+      .setRequired(true);
     modal.addComponents(new ActionRowBuilder().addComponents(targetInput));
     await interaction.showModal(modal);
     return true;
@@ -76,13 +68,13 @@ export async function handleCreatorQuickActionButton(interaction) {
   if (action === 'set-time') {
     const modal = new ModalBuilder()
       .setCustomId(`creatorModal:set-time:${side}:${creatorId}`)
-      .setTitle(`Set time: ${creator.name.slice(0, 45)}`);
+      .setTitle('Set time');
     const targetInput = new TextInputBuilder()
       .setCustomId('target')
       .setLabel('Target')
       .setStyle(TextInputStyle.Short)
       .setRequired(true)
-      .setValue(creator.default_target || TARGETS[0] || '');
+      .setValue(TARGETS[0] || '');
     const minInput = new TextInputBuilder()
       .setCustomId('min')
       .setLabel('Minutes')
@@ -104,19 +96,26 @@ export async function handleCreatorQuickActionButton(interaction) {
     return true;
   }
 
+  const guildId = interaction.guildId;
+  await interaction.deferReply({ ephemeral: true });
+  const creator = await rallyRepo.getCreatorById({ guildId, creatorId });
+  if (!creator || creator.side !== side) {
+    await interaction.editReply({ content: 'Creator not found.' });
+    return true;
+  }
+
   if (action === 'toggle-enabled') {
     const nextEnabled = !creator.enabled;
     await rallyRepo.setEnabled({ guildId, creatorId: creator.id, enabled: nextEnabled });
-    await interaction.reply({
+    await interaction.editReply({
       embeds: [resultEmbed({ title: 'Enabled updated', lines: [`**${creator.name}** = **${nextEnabled ? 'on' : 'off'}**`] })],
-      ephemeral: true
     });
     return true;
   }
 
   if (action === 'delete') {
     await rallyRepo.deleteCreatorByName({ guildId, side: creator.side, name: creator.name });
-    await interaction.reply({ content: `Deleted ${creator.side} creator: ${creator.name}`, ephemeral: true });
+    await interaction.editReply({ content: `Deleted ${creator.side} creator: ${creator.name}` });
     return true;
   }
 

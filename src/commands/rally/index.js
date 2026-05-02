@@ -93,6 +93,10 @@ export const rallyCommand = {
       .slice(0, 25)
       .map(name => ({ name: name.slice(0, 100), value: name.slice(0, 100) }));
 
-    await interaction.respond(choices);
+    try {
+      await interaction.respond(choices);
+    } catch (err) {
+      if (err?.code !== 10062) throw err;
+    }
   }
 };
