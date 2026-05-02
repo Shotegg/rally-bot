@@ -9,6 +9,7 @@ export function registerList(builder) {
 }
 
 export async function handleList(interaction) {
+  await interaction.deferReply({ ephemeral: true });
   const guildId = interaction.guildId;
   const allies = await rallyRepo.listCreators({ guildId, side: 'ally' });
   const enemies = await rallyRepo.listCreators({ guildId, side: 'enemy' });
@@ -20,8 +21,7 @@ export async function handleList(interaction) {
     ...(enemies.length ? enemies.map(c => `- ${c.name}`) : ['(none)'])
   ];
 
-  await interaction.reply({
+  await interaction.editReply({
     embeds: [resultEmbed({ title: 'Creators', lines })],
-    ephemeral: true
   });
 }

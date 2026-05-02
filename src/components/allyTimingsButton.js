@@ -25,13 +25,12 @@ async function sendModeMatrixFollowUps(interaction, mode) {
   const guildId = interaction.guildId;
   const enemies = await rallyRepo.listCreators({ guildId, side: 'enemy' });
   if (!enemies.length) {
-    await interaction.reply({ content: 'No enemies found.', ephemeral: true });
+    await interaction.editReply({ content: 'No enemies found.' });
     return;
   }
 
-  await interaction.reply({
+  await interaction.editReply({
     content: `Mode selected: **${mode === 'enemy' ? 'counter by enemy' : 'counter by target'}**`,
-    ephemeral: true
   });
 
   for (let start = 0; start < enemies.length; start += 5) {
@@ -68,10 +67,12 @@ export async function handleEnemyModeButton(interaction) {
     await interaction.reply({ content: 'Invalid mode.', ephemeral: true });
     return;
   }
+  await interaction.deferReply({ ephemeral: true });
   await sendModeMatrixFollowUps(interaction, mode);
 }
 
 export async function handleAllyTimingsButton(interaction) {
+  await interaction.deferReply();
   const guildId = interaction.guildId;
   const parts = interaction.customId.split(':');
   const hasMode = parts.length >= 4 && (parts[1] === 'target' || parts[1] === 'enemy');
@@ -82,7 +83,7 @@ export async function handleAllyTimingsButton(interaction) {
   const enemies = await rallyRepo.listCreators({ guildId, side: 'enemy' });
   const enemy = enemies.find(e => e.id === enemyId);
   if (!enemy) {
-    await interaction.reply({ content: 'Enemy not found.' });
+    await interaction.editReply({ content: 'Enemy not found.' });
     return;
   }
 
@@ -90,7 +91,7 @@ export async function handleAllyTimingsButton(interaction) {
     ? TARGETS[targetIndex]
     : '';
   if (!target) {
-    await interaction.reply({ content: 'Invalid target.' });
+    await interaction.editReply({ content: 'Invalid target.' });
     return;
   }
 
@@ -101,7 +102,7 @@ export async function handleAllyTimingsButton(interaction) {
   }).then(rows => rows.filter(r => r.id === enemy.id));
 
   if (!enemyTiming || !Number.isFinite(enemyTiming.travel_sec)) {
-    await interaction.reply({ content: `Enemy ${enemy.name} has no timing for ${target}.` });
+    await interaction.editReply({ content: `Enemy ${enemy.name} has no timing for ${target}.` });
     return;
   }
 
@@ -132,13 +133,13 @@ export async function handleAllyTimingsButton(interaction) {
   });
 
   if (!results.length) {
-    await interaction.reply({ content: `(no results) for ${enemy.name} @ ${target}` });
+    await interaction.editReply({ content: `(no results) for ${enemy.name} @ ${target}` });
     return;
   }
 
   const toLine = (r) => `${r.name} -> ${formatUtcTime(r.time)} -> ${r.target}`;
 
-  await interaction.reply({ content: toLine(results[0]), allowedMentions: { parse: ['users'] } });
+  await interaction.editReply({ content: toLine(results[0]), allowedMentions: { parse: ['users'] } });
   for (let i = 1; i < results.length; i += 1) {
     await interaction.followUp({ content: toLine(results[i]), allowedMentions: { parse: ['users'] } });
   }

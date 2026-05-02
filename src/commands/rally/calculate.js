@@ -13,6 +13,7 @@ export function registerCalculate(builder) {
 }
 
 export async function handleCalculate(interaction) {
+  await interaction.deferReply();
   const guildId = interaction.guildId;
   const targetFilter = interaction.options.getString('target') || '';
   const now = new Date();
@@ -29,7 +30,7 @@ export async function handleCalculate(interaction) {
     ? results.map(r => `${r.name} -> ${formatUtcTime(r.time)} -> ${r.target}`)
     : ['(no results)'];
 
-  await interaction.reply({
+  await interaction.editReply({
     content: `Results (UTC)${targetFilter ? ` @ ${targetFilter}` : ''}\n${lines.join('\n')}`,
     allowedMentions: { parse: ['users'] }
   });

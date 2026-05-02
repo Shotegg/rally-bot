@@ -22,6 +22,7 @@ export function registerImport(builder) {
 }
 
 export async function handleImport(interaction) {
+  await interaction.deferReply({ ephemeral: true });
   const guildId = interaction.guildId;
   const attachment = interaction.options.getAttachment('file', true);
   try {
@@ -29,7 +30,7 @@ export async function handleImport(interaction) {
     const text = await res.text();
     const data = JSON.parse(text);
     if (!Array.isArray(data)) {
-      await interaction.reply({ content: 'Invalid import payload.', ephemeral: true });
+      await interaction.editReply({ content: 'Invalid import payload.' });
       return;
     }
 
@@ -76,8 +77,8 @@ export async function handleImport(interaction) {
       }
     }
 
-    await interaction.reply({ content: 'Import complete.', ephemeral: true });
+    await interaction.editReply({ content: 'Import complete.' });
   } catch {
-    await interaction.reply({ content: 'Failed to import file.', ephemeral: true });
+    await interaction.editReply({ content: 'Failed to import file.' });
   }
 }

@@ -12,6 +12,7 @@ export function registerSetEnemyAlly(builder) {
 }
 
 export async function handleSetEnemyAlly(interaction) {
+  await interaction.deferReply({ ephemeral: true });
   const guildId = interaction.guildId;
   const enemyName = interaction.options.getString('enemy', true);
   const allyName = interaction.options.getString('ally', true);
@@ -19,13 +20,13 @@ export async function handleSetEnemyAlly(interaction) {
 
   const enemy = await rallyRepo.getCreatorByName({ guildId, side: 'enemy', name: enemyName });
   if (!enemy) {
-    await interaction.reply({ content: `Creator not found: enemy ${enemyName}`, ephemeral: true });
+    await interaction.editReply({ content: `Creator not found: enemy ${enemyName}` });
     return;
   }
 
   const ally = await rallyRepo.getCreatorByName({ guildId, side: 'ally', name: allyName });
   if (!ally) {
-    await interaction.reply({ content: `Creator not found: ally ${allyName}`, ephemeral: true });
+    await interaction.editReply({ content: `Creator not found: ally ${allyName}` });
     return;
   }
 
@@ -33,7 +34,7 @@ export async function handleSetEnemyAlly(interaction) {
   const nextEnemy = await rallyRepo.getCreatorByName({ guildId, side: 'enemy', name: enemyName });
   const allyList = nextEnemy.enemy_allies?.length ? nextEnemy.enemy_allies.join(', ') : '(none)';
 
-  await interaction.reply({
+  await interaction.editReply({
     embeds: [resultEmbed({
       title: 'Enemy allies updated',
       lines: [
@@ -41,7 +42,6 @@ export async function handleSetEnemyAlly(interaction) {
         `ally: **${ally.name}** -> **${enabled ? 'on' : 'off'}**`,
         `enemy allies: ${allyList}`
       ]
-    })],
-    ephemeral: true
+    })]
   });
 }

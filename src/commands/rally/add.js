@@ -20,6 +20,7 @@ export function registerAdd(builder) {
 }
 
 export async function handleAdd(interaction) {
+  await interaction.deferReply({ ephemeral: true });
   const guildId = interaction.guildId;
   const side = interaction.options.getString('side', true);
   const pickedUser = interaction.options.getUser('user');
@@ -33,9 +34,8 @@ export async function handleAdd(interaction) {
   const enabled = interaction.options.getBoolean('enabled');
 
   if (!name) {
-    await interaction.reply({
+    await interaction.editReply({
       content: 'You must provide either `user` or `name`.',
-      ephemeral: true
     });
     return;
   }
@@ -57,7 +57,7 @@ export async function handleAdd(interaction) {
     ? 'warning: plain `@username` text will not ping. Use a real mention token like `<@123456789012345678>`.'
     : null;
 
-  await interaction.reply({
+  await interaction.editReply({
     embeds: [resultEmbed({
       title: `Saved ${side}: ${creator.display_name || creator.name}`,
       lines: [
@@ -69,7 +69,6 @@ export async function handleAdd(interaction) {
         `targets: ${TARGETS.join(', ')}`,
         ...(mentionHint ? [mentionHint] : [])
       ]
-    })],
-    ephemeral: true
+    })]
   });
 }

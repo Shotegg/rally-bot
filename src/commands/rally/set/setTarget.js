@@ -15,6 +15,7 @@ export function registerSetTarget(builder) {
 }
 
 export async function handleSetTarget(interaction) {
+  await interaction.deferReply({ ephemeral: true });
   const guildId = interaction.guildId;
   const side = interaction.options.getString('side', true);
   const name = interaction.options.getString('name', true);
@@ -22,13 +23,12 @@ export async function handleSetTarget(interaction) {
 
   const creator = await rallyRepo.getCreatorByName({ guildId, side, name });
   if (!creator) {
-    await interaction.reply({ content: `Creator not found: ${side} ${name}`, ephemeral: true });
+    await interaction.editReply({ content: `Creator not found: ${side} ${name}` });
     return;
   }
 
   await rallyRepo.setDefaultTarget({ guildId, creatorId: creator.id, target });
-  await interaction.reply({
+  await interaction.editReply({
     embeds: [resultEmbed({ title: 'Default target saved', lines: [`**${creator.name}** -> **${target}**`] })],
-    ephemeral: true
   });
 }

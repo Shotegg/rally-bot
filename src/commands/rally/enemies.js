@@ -11,10 +11,11 @@ export function registerEnemies(builder) {
 }
 
 export async function handleEnemies(interaction) {
+  await interaction.deferReply({ ephemeral: true });
   const guildId = interaction.guildId;
   const enemies = await rallyRepo.listCreators({ guildId, side: 'enemy' });
   if (!enemies.length) {
-    await interaction.reply({ content: 'No enemies found. Use /rally add side:enemy ...', ephemeral: true });
+    await interaction.editReply({ content: 'No enemies found. Use /rally add side:enemy ...' });
     return;
   }
 
@@ -29,7 +30,7 @@ export async function handleEnemies(interaction) {
       .setStyle(ButtonStyle.Secondary)
   );
 
-  await interaction.reply({
+  await interaction.editReply({
     embeds: [resultEmbed({
       title: 'Counter mode',
       lines: [
@@ -37,7 +38,6 @@ export async function handleEnemies(interaction) {
         `enemies loaded: **${enemies.length}**`
       ]
     })],
-    components: [modeRow],
-    ephemeral: true
+    components: [modeRow]
   });
 }

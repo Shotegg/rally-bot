@@ -15,6 +15,7 @@ export function registerSetEnabled(builder) {
 }
 
 export async function handleSetEnabled(interaction) {
+  await interaction.deferReply({ ephemeral: true });
   const guildId = interaction.guildId;
   const side = interaction.options.getString('side', true);
   const name = interaction.options.getString('name', true);
@@ -22,13 +23,12 @@ export async function handleSetEnabled(interaction) {
 
   const creator = await rallyRepo.getCreatorByName({ guildId, side, name });
   if (!creator) {
-    await interaction.reply({ content: `Creator not found: ${side} ${name}`, ephemeral: true });
+    await interaction.editReply({ content: `Creator not found: ${side} ${name}` });
     return;
   }
 
   await rallyRepo.setEnabled({ guildId, creatorId: creator.id, enabled });
-  await interaction.reply({
+  await interaction.editReply({
     embeds: [resultEmbed({ title: 'Enabled updated', lines: [`**${creator.name}** = **${enabled ? 'on' : 'off'}**`] })],
-    ephemeral: true
   });
 }

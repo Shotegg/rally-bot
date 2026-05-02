@@ -24,13 +24,14 @@ export function registerInfo(builder) {
 }
 
 export async function handleInfo(interaction) {
+  await interaction.deferReply({ ephemeral: true });
   const guildId = interaction.guildId;
   const side = interaction.options.getString('side', true);
   const name = interaction.options.getString('name', true);
 
   const creator = await rallyRepo.getCreatorByName({ guildId, side, name });
   if (!creator) {
-    await interaction.reply({ content: `Creator not found: ${side} ${name}`, ephemeral: true });
+    await interaction.editReply({ content: `Creator not found: ${side} ${name}` });
     return;
   }
   const timings = await rallyRepo.listTimingsForCreator({ guildId, creatorId: creator.id });
@@ -39,7 +40,7 @@ export async function handleInfo(interaction) {
   const enabledCounters = TARGETS.filter(t => Boolean(creator.counter_targets?.[t]));
   const counterSummary = enabledCounters.length ? enabledCounters.join(', ') : 'none';
 
-  await interaction.reply({
+  await interaction.editReply({
     embeds: [resultEmbed({
       title: `${side}: ${creator.display_name || creator.name}`,
       lines: [
@@ -54,6 +55,5 @@ export async function handleInfo(interaction) {
       ]
     })],
     components: buildCreatorQuickActionRows({ side, creator }),
-    ephemeral: true
   });
 }

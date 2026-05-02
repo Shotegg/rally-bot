@@ -20,6 +20,7 @@ export function registerSetCounter(builder) {
 }
 
 export async function handleSetCounter(interaction) {
+  await interaction.deferReply({ ephemeral: true });
   const guildId = interaction.guildId;
   const name = interaction.options.getString('name', true);
   const target = interaction.options.getString('target', true);
@@ -27,13 +28,12 @@ export async function handleSetCounter(interaction) {
 
   const creator = await rallyRepo.getCreatorByName({ guildId, side: 'ally', name });
   if (!creator) {
-    await interaction.reply({ content: `Creator not found: ally ${name}`, ephemeral: true });
+    await interaction.editReply({ content: `Creator not found: ally ${name}` });
     return;
   }
 
   await rallyRepo.setCounterTarget({ guildId, creatorId: creator.id, target, enabled });
-  await interaction.reply({
+  await interaction.editReply({
     embeds: [resultEmbed({ title: 'Counter updated', lines: [`**${creator.name}** @ **${target}** = **${enabled ? 'on' : 'off'}**`] })],
-    ephemeral: true
   });
 }

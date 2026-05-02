@@ -103,7 +103,7 @@ export const rallyCommand = {
     try {
       await interaction.respond(choices);
     } catch (err) {
-      if (err?.code !== 10062) throw err;
+      if (err?.code !== 10062 && err?.code !== 40060) throw err;
     }
   }
 };

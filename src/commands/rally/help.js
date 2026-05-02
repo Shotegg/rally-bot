@@ -8,6 +8,7 @@ export function registerHelp(builder) {
 }
 
 export async function handleHelp(interaction) {
+  await interaction.deferReply({ ephemeral: true });
   const lines = [
     'Use `/rally add` to create ally/enemy creators. Prefer the `user` option for real Discord pings.',
     'Use `/rally set-time` to save travel time per target.',
@@ -19,8 +20,7 @@ export async function handleHelp(interaction) {
     'For real Discord pings in results, creators must be real mentions (`<@userId>`), not plain `@username` text.'
   ];
 
-  await interaction.reply({
+  await interaction.editReply({
     embeds: [resultEmbed({ title: 'Rally Bot Help', lines })],
-    ephemeral: true
   });
 }

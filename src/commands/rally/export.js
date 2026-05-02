@@ -50,6 +50,7 @@ export function registerExport(builder) {
 }
 
 export async function handleExport(interaction) {
+  await interaction.deferReply({ ephemeral: true });
   const guildId = interaction.guildId;
   const allies = await rallyRepo.listCreators({ guildId, side: 'ally' });
   const enemies = await rallyRepo.listCreators({ guildId, side: 'enemy' });
@@ -57,5 +58,5 @@ export async function handleExport(interaction) {
   const payload = JSON.stringify(makeExportPayload([...allies, ...enemies], timings), null, 2);
   const filename = `rally-export-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
   const file = new AttachmentBuilder(Buffer.from(payload, 'utf8'), { name: filename });
-  await interaction.reply({ content: 'Export file:', files: [file], ephemeral: true });
+  await interaction.editReply({ content: 'Export file:', files: [file] });
 }
