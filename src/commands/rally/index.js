@@ -96,11 +96,8 @@ export const rallyCommand = {
       })
       .slice(0, 25)
       .map(c => {
-        const labelCore = c.display_name && c.display_name !== c.name
-          ? `${c.display_name} (${c.name})`
-          : c.name;
-        const label = c.discord_user_id ? `${labelCore} [${c.discord_user_id}]` : labelCore;
-        return { name: label.slice(0, 100), value: c.name.slice(0, 100) };
+        const label = (c.display_name || c.name).slice(0, 100);
+        return { name: label, value: c.name.slice(0, 100) };
       });
 
     try {

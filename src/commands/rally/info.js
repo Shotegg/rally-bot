@@ -43,8 +43,6 @@ export async function handleInfo(interaction) {
     embeds: [resultEmbed({
       title: `${side}: ${creator.display_name || creator.name}`,
       lines: [
-        `creator key: **${creator.name}**`,
-        ...(creator.discord_user_id ? [`user id: **${creator.discord_user_id}**`] : []),
         `enabled: **${creator.enabled ? 'yes' : 'no'}**`,
         `buffer: **${creator.buffer_sec}s**`,
         `default target: **${creator.default_target || '(none)'}**`,
