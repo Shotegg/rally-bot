@@ -127,10 +127,11 @@ export async function handleCreatorQuickActionModal(interaction) {
   if (!parsed) return false;
 
   const { action, side, creatorId } = parsed;
+  await interaction.deferReply({ ephemeral: true });
   const guildId = interaction.guildId;
   const creator = await rallyRepo.getCreatorById({ guildId, creatorId });
   if (!creator || creator.side !== side) {
-    await interaction.reply({ content: 'Creator not found.', ephemeral: true });
+    await interaction.editReply({ content: 'Creator not found.' });
     return true;
   }
 
@@ -138,14 +139,13 @@ export async function handleCreatorQuickActionModal(interaction) {
     const targetRaw = interaction.fields.getTextInputValue('target');
     const target = normalizeTargetName(targetRaw);
     if (!target) {
-      await interaction.reply({ content: `Invalid target. Use one of: ${TARGETS.join(', ')}`, ephemeral: true });
+      await interaction.editReply({ content: `Invalid target. Use one of: ${TARGETS.join(', ')}` });
       return true;
     }
 
     await rallyRepo.setDefaultTarget({ guildId, creatorId: creator.id, target });
-    await interaction.reply({
+    await interaction.editReply({
       embeds: [resultEmbed({ title: 'Default target saved', lines: [`**${creator.name}** -> **${target}**`] })],
-      ephemeral: true
     });
     return true;
   }
@@ -156,19 +156,18 @@ export async function handleCreatorQuickActionModal(interaction) {
     const min = Number(interaction.fields.getTextInputValue('min'));
     const sec = Number(interaction.fields.getTextInputValue('sec'));
     if (!target) {
-      await interaction.reply({ content: `Invalid target. Use one of: ${TARGETS.join(', ')}`, ephemeral: true });
+      await interaction.editReply({ content: `Invalid target. Use one of: ${TARGETS.join(', ')}` });
       return true;
     }
     if (!Number.isFinite(min) || !Number.isFinite(sec) || min < 0 || sec < 0) {
-      await interaction.reply({ content: 'Minutes/seconds must be non-negative numbers.', ephemeral: true });
+      await interaction.editReply({ content: 'Minutes/seconds must be non-negative numbers.' });
       return true;
     }
 
     const travelSec = Math.floor(min) * 60 + Math.floor(sec);
     await rallyRepo.setTiming({ guildId, creatorId: creator.id, target, travelSec });
-    await interaction.reply({
+    await interaction.editReply({
       embeds: [resultEmbed({ title: 'Timing saved', lines: [`**${creator.name}** @ **${target}** = **${travelSec}s**`] })],
-      ephemeral: true
     });
     return true;
   }

@@ -71,6 +71,10 @@ async function main() {
         }
       }
     } catch (err) {
+      if (err?.code === 10062 || err?.code === 40060) {
+        console.warn(`Discord interaction race ignored: ${err.code}`);
+        return;
+      }
       console.error(err);
       if (interaction.isAutocomplete()) return;
       const msg = 'Something went wrong. Check console logs.';
