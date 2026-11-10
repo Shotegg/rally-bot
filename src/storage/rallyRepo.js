@@ -27,6 +27,10 @@ function mapCreatorRow(row) {
     enabled: Boolean(row.enabled),
     display_name: row.display_name || row.name || '',
     discord_user_id: row.discord_user_id || '',
+    player_id: row.player_id || '',
+    coord_x: row.coord_x == null ? null : Number(row.coord_x),
+    coord_y: row.coord_y == null ? null : Number(row.coord_y),
+    speed_buff: Number(row.speed_buff ?? 1),
     default_target: row.default_target || '',
     targets: safeJsonParse(row.targets_json, []),
     counter_targets: safeJsonParse(row.counter_targets_json, {}),
@@ -41,6 +45,10 @@ export const rallyRepo = {
     name,
     displayName = '',
     discordUserId = '',
+    playerId = '',
+    coordX = null,
+    coordY = null,
+    speedBuff = 1,
     targets = [],
     bufferSec = 0,
     enabled = true,
@@ -50,18 +58,22 @@ export const rallyRepo = {
 
     await run(
       `
-      INSERT INTO creators (guild_id, side, name, display_name, discord_user_id, buffer_sec, enabled, default_target, targets_json)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO creators (guild_id, side, name, display_name, discord_user_id, player_id, coord_x, coord_y, speed_buff, buffer_sec, enabled, default_target, targets_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(guild_id, side, name)
       DO UPDATE SET
         display_name=excluded.display_name,
         discord_user_id=excluded.discord_user_id,
+        player_id=excluded.player_id,
+        coord_x=excluded.coord_x,
+        coord_y=excluded.coord_y,
+        speed_buff=excluded.speed_buff,
         buffer_sec=excluded.buffer_sec,
         enabled=excluded.enabled,
         default_target=excluded.default_target,
         targets_json=excluded.targets_json
       `,
-      [guildId, side, name, displayName || name, discordUserId || '', bufferSec, toBool01(enabled), defaultTarget, JSON.stringify(t)]
+      [guildId, side, name, displayName || name, discordUserId || '', playerId || '', coordX, coordY, speedBuff, bufferSec, toBool01(enabled), defaultTarget, JSON.stringify(t)]
     );
 
     return this.getCreatorByName({ guildId, side, name });
@@ -193,6 +205,26 @@ export const rallyRepo = {
       target: r.target,
       travel_sec: (r.travel_sec == null ? null : Number(r.travel_sec))
     }));
+  },
+
+  async listTargetCoordinates({ guildId }) {
+    const rows = await all(
+      `SELECT target, coord_x, coord_y FROM target_coordinates WHERE guild_id=? ORDER BY target ASC`,
+      [guildId]
+    );
+    return rows.map(row => ({ target: row.target, coord_x: Number(row.coord_x), coord_y: Number(row.coord_y) }));
+  },
+
+  async setTargetCoordinates({ guildId, target, coordX, coordY }) {
+    await run(
+      `
+      INSERT INTO target_coordinates (guild_id, target, coord_x, coord_y)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(guild_id, target)
+      DO UPDATE SET coord_x=excluded.coord_x, coord_y=excluded.coord_y
+      `,
+      [guildId, target, coordX, coordY]
+    );
   },
 
   async setDefaultTarget({ guildId, creatorId, target }) {

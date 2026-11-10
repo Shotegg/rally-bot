@@ -117,7 +117,7 @@ export async function handleAllyTimingsButton(interaction) {
     : null;
 
   const enriched = allies.map(a => ({
-    name: a.name,
+    name: a.discord_user_id ? `<@${a.discord_user_id}>` : a.name,
     enabled: a.enabled,
     travel_sec: a.travel_sec,
     counter_enabled: mode === 'enemy'

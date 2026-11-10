@@ -18,7 +18,7 @@ export function calculateAllSendTimes({ now, creators }) {
 
     if (!groups.has(c.default_target)) groups.set(c.default_target, []);
     groups.get(c.default_target).push({
-      name: c.name,
+      name: c.discord_user_id ? `<@${c.discord_user_id}>` : c.name,
       target: c.default_target,
       travel_sec: c.travel_sec,
       buffer_sec: c.buffer_sec || 0

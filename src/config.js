@@ -8,7 +8,10 @@ const parsedGuildIds = (process.env.GUILD_IDS || process.env.GUILD_ID || '')
 export const config = {
   token: process.env.DISCORD_TOKEN,
   appId: process.env.APP_ID,
-  guildIds: [...new Set(parsedGuildIds)]
+  guildIds: [...new Set(parsedGuildIds)],
+  dashboardToken: process.env.DASHBOARD_TOKEN || '',
+  ownKingdomId: process.env.OWN_KINGDOM_ID || '342',
+  dashboardOrigin: process.env.DASHBOARD_ORIGIN || 'https://shotegg.github.io'
 };
 
 if (!config.token || !config.appId || !config.guildIds.length) {

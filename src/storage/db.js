@@ -30,6 +30,10 @@ export async function initDb() {
       name TEXT NOT NULL,
       display_name TEXT NOT NULL DEFAULT '',
       discord_user_id TEXT NOT NULL DEFAULT '',
+      player_id TEXT NOT NULL DEFAULT '',
+      coord_x DOUBLE PRECISION,
+      coord_y DOUBLE PRECISION,
+      speed_buff DOUBLE PRECISION NOT NULL DEFAULT 1,
       side TEXT NOT NULL CHECK(side IN ('ally','enemy')),
       buffer_sec INTEGER NOT NULL DEFAULT 0,
       enabled INTEGER NOT NULL DEFAULT 1,
@@ -48,11 +52,23 @@ export async function initDb() {
       travel_sec INTEGER NOT NULL DEFAULT 0,
       UNIQUE(guild_id, creator_id, target)
     );
+
+    CREATE TABLE IF NOT EXISTS target_coordinates (
+      guild_id TEXT NOT NULL,
+      target TEXT NOT NULL,
+      coord_x DOUBLE PRECISION NOT NULL,
+      coord_y DOUBLE PRECISION NOT NULL,
+      PRIMARY KEY (guild_id, target)
+    );
   `);
 
   await exec(`ALTER TABLE creators ADD COLUMN IF NOT EXISTS enabled INTEGER NOT NULL DEFAULT 1`);
   await exec(`ALTER TABLE creators ADD COLUMN IF NOT EXISTS display_name TEXT NOT NULL DEFAULT ''`);
   await exec(`ALTER TABLE creators ADD COLUMN IF NOT EXISTS discord_user_id TEXT NOT NULL DEFAULT ''`);
+  await exec(`ALTER TABLE creators ADD COLUMN IF NOT EXISTS player_id TEXT NOT NULL DEFAULT ''`);
+  await exec(`ALTER TABLE creators ADD COLUMN IF NOT EXISTS coord_x DOUBLE PRECISION`);
+  await exec(`ALTER TABLE creators ADD COLUMN IF NOT EXISTS coord_y DOUBLE PRECISION`);
+  await exec(`ALTER TABLE creators ADD COLUMN IF NOT EXISTS speed_buff DOUBLE PRECISION NOT NULL DEFAULT 1`);
   await exec(`ALTER TABLE creators ADD COLUMN IF NOT EXISTS default_target TEXT NOT NULL DEFAULT ''`);
   await exec(`ALTER TABLE creators ADD COLUMN IF NOT EXISTS counter_targets_json TEXT NOT NULL DEFAULT '{}'`);
   await exec(`ALTER TABLE creators ADD COLUMN IF NOT EXISTS enemy_allies_json TEXT NOT NULL DEFAULT '[]'`);
