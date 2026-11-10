@@ -138,6 +138,10 @@ function rankingRows(payload) {
       const rows = visit(candidate);
       if (rows.length) return rows;
     }
+    for (const candidate of Object.values(value)) {
+      const rows = visit(candidate);
+      if (rows.length) return rows;
+    }
     return [];
   }
   return visit(payload);
