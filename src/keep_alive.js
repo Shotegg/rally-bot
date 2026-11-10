@@ -61,7 +61,7 @@ function parseCoordinates(value) {
 }
 
 function selectGuildId(value) {
-  const guildId = String(value || config.guildIds[0] || '');
+  const guildId = String(value || config.dashboardGuildId || '');
   return config.guildIds.includes(guildId) ? guildId : '';
 }
 
@@ -94,6 +94,46 @@ async function dashboard(guildId) {
     targets: TARGETS.map(target => ({ target, ...TARGET_COORDINATES[target] })),
     allies: allies.map(withTimings),
     enemies: enemies.map(withTimings)
+  };
+}
+
+async function mightPulse(path) {
+  if (!config.mightPulseApiKey) throw new Error('MightPulse is disabled. Set MIGHTPULSE_API_KEY on Render.');
+  const response = await fetch(`https://api.mightpulse.com/v1${path}`, {
+    headers: { Authorization: `Bearer ${config.mightPulseApiKey}` }
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error || body.message || `MightPulse request failed (${response.status}).`);
+  return body;
+}
+
+async function mysticTrialCandidates(kingdomId) {
+  if (!/^\d+$/.test(String(kingdomId))) throw new Error('Kingdom ID must be numeric.');
+  const ranking = await mightPulse(`/kingdoms/${kingdomId}/ranks?board=mystic_trial&limit=10`);
+  const board = ranking.ranks || ranking.players || ranking.leaderboard || ranking.board || [];
+  const ranked = Array.isArray(board) ? board.slice(0, 10) : [];
+  const ids = ranked.map(player => player.governor_id || player.fid).filter(Boolean);
+  if (!ids.length) return { kingdomId: String(kingdomId), candidates: [], fresh: null };
+  const details = await mightPulse(`/players?ids=${encodeURIComponent(ids.join(','))}&include=base`);
+  const players = details.players || [];
+  const byGovernorId = new Map(players.map(entry => [String(entry.governor_id || entry.fid), entry.player || entry]));
+  return {
+    kingdomId: String(kingdomId),
+    fresh: details.fresh ?? null,
+    cachedAt: details.cached_at || null,
+    candidates: ranked.map(rank => {
+      const governorId = String(rank.governor_id || rank.fid || '');
+      const player = byGovernorId.get(governorId) || {};
+      return {
+        playerId: governorId,
+        name: player.nick_name || rank.nick_name || `Player ${governorId}`,
+        score: rank.score ?? rank.value ?? 0,
+        coordX: Number.isFinite(Number(player.x)) ? Number(player.x) : null,
+        coordY: Number.isFinite(Number(player.y)) ? Number(player.y) : null,
+        fresh: player.fresh ?? details.fresh ?? null,
+        cachedAt: player.cached_at || details.cached_at || null
+      };
+    })
   };
 }
 
@@ -138,6 +178,60 @@ async function handleApi(req, res, url, origin) {
     return send(res, 200, { creator }, origin);
   }
 
+  if (req.method === 'PUT' && url.pathname === '/api/counters') {
+    const body = await readJson(req);
+    const side = body.side === 'enemy' ? 'enemy' : body.side === 'ally' ? 'ally' : '';
+    const name = String(body.name || '').trim();
+    const creator = side && name ? await rallyRepo.getCreatorByName({ guildId, side, name }) : null;
+    if (!creator) return send(res, 404, { error: 'Creator not found.' }, origin);
+
+    if (side === 'ally') {
+      const target = normalizeTargetName(body.target);
+      if (!target || typeof body.enabled !== 'boolean') return send(res, 400, { error: 'Target and enabled state are required.' }, origin);
+      await rallyRepo.setCounterTarget({ guildId, creatorId: creator.id, target, enabled: body.enabled });
+    } else {
+      const allies = Array.isArray(body.allies) ? body.allies.map(value => String(value).trim()).filter(Boolean) : null;
+      if (!allies) return send(res, 400, { error: 'Allies list is required.' }, origin);
+      await rallyRepo.setEnemyAllies({ guildId, creatorId: creator.id, allies });
+    }
+    return send(res, 200, { ok: true }, origin);
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/mightpulse/mystic-trial') {
+    const kingdomId = url.searchParams.get('kingdomId') || '';
+    return send(res, 200, await mysticTrialCandidates(kingdomId), origin);
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/mightpulse/import') {
+    const body = await readJson(req);
+    const side = body.side === 'enemy' ? 'enemy' : body.side === 'ally' ? 'ally' : '';
+    const candidates = Array.isArray(body.candidates) ? body.candidates.slice(0, 10) : [];
+    if (!side || !candidates.length) return send(res, 400, { error: 'Side and at least one selected player are required.' }, origin);
+    const saved = [];
+    for (const candidate of candidates) {
+      const name = String(candidate.name || '').trim();
+      const playerId = String(candidate.playerId || '').trim();
+      const coordX = finiteOrNull(candidate.coordX);
+      const coordY = finiteOrNull(candidate.coordY);
+      if (!name || !playerId || (coordX == null) !== (coordY == null)) continue;
+      const existing = await rallyRepo.getCreatorByName({ guildId, side, name });
+      const creator = await rallyRepo.upsertCreator({
+        guildId, side, name,
+        displayName: existing?.display_name || name,
+        discordUserId: existing?.discord_user_id || '',
+        playerId, coordX, coordY,
+        petBonusPercent: existing?.pet_bonus_percent ?? 30,
+        petsUntil: existing?.pets_until ?? 0,
+        bufferSec: existing?.buffer_sec ?? 0,
+        enabled: existing?.enabled ?? true,
+        defaultTarget: existing?.default_target || ''
+      });
+      await refreshCreatorTimings(guildId, creator);
+      saved.push(creator.name);
+    }
+    return send(res, 200, { saved });
+  }
+
   if (req.method === 'DELETE' && url.pathname === '/api/creators') {
     const body = await readJson(req);
     const side = body.side === 'enemy' ? 'enemy' : body.side === 'ally' ? 'ally' : '';
@@ -160,7 +254,7 @@ export function startKeepAlive() {
       if (!origin) return send(res, 403, { error: 'Origin is not allowed.' });
       res.writeHead(204, {
         'Access-Control-Allow-Origin': origin,
-        'Access-Control-Allow-Methods': 'GET, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Authorization, Content-Type',
         Vary: 'Origin'
       });

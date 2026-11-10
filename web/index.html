@@ -40,7 +40,16 @@
         </form>
       </section>
 
-      <section class="panel" id="import-panel" hidden><h2>Mystic Trial import</h2><p>Own kingdom: <strong id="own-kingdom-import">342</strong>. Opponent kingdom: <input id="opponent-kingdom" inputmode="numeric" placeholder="Kingdom ID">. MightPulse import will be added next.</p></section>
+      <section class="panel" id="import-panel" hidden>
+        <h2>Mystic Trial import</h2>
+        <form id="mystic-form" class="grid three">
+          <label>Kingdom ID<input id="mystic-kingdom" inputmode="numeric" required></label>
+          <label>Import as<select id="mystic-side"><option value="ally">Allies</option><option value="enemy">Enemies</option></select></label>
+          <button>Preview Top 10</button>
+        </form>
+        <p class="hint">Your kingdom is <strong id="own-kingdom-import">342</strong>. Use an opponent kingdom and choose Enemies, or use 342 and choose Allies. Coordinates marked stale are not fresh from MightPulse.</p>
+        <div id="mystic-preview"></div>
+      </section>
       <section class="lists" id="lists" hidden></section>
     </main>
     <script type="module" src="app.js"></script>
