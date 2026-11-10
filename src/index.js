@@ -3,7 +3,6 @@ import { config } from './config.js';
 import { initDb } from './storage/db.js';
 import { rallyCommand } from './commands/rally/index.js';
 import { handleAllyTimingsButton, handleEnemyModeButton } from './components/allyTimingsButton.js';
-import { handleCreatorQuickActionButton, handleCreatorQuickActionModal } from './components/creatorQuickActions.js';
 import { startKeepAlive } from './keep_alive.js';
 
 async function registerCommands() {
@@ -48,11 +47,6 @@ async function main() {
       }
 
       if (interaction.isButton()) {
-        if (interaction.customId.startsWith('creatorAction:')) {
-          await handleCreatorQuickActionButton(interaction);
-          return;
-        }
-
         if (interaction.customId.startsWith('enemyMode:')) {
           await handleEnemyModeButton(interaction);
           return;
@@ -64,12 +58,6 @@ async function main() {
         }
       }
 
-      if (interaction.isModalSubmit()) {
-        if (interaction.customId.startsWith('creatorModal:')) {
-          await handleCreatorQuickActionModal(interaction);
-          return;
-        }
-      }
     } catch (err) {
       if (err?.code === 10062 || err?.code === 40060) {
         console.warn(`Discord interaction race ignored: ${err.code}`);

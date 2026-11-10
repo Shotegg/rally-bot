@@ -2,7 +2,6 @@ import { rallyRepo } from '../../storage/rallyRepo.js';
 import { resultEmbed } from '../../ui/embeds.js';
 import { TARGETS } from '../../domain/targets.js';
 import { addSideOption } from './shared.js';
-import { buildCreatorQuickActionRows } from '../../components/creatorQuickActions.js';
 
 function formatTravelSec(total) {
   const n = Number(total);
@@ -54,6 +53,5 @@ export async function handleInfo(interaction) {
           : [])
       ]
     })],
-    components: buildCreatorQuickActionRows({ side, creator }),
   });
 }
