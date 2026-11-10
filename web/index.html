@@ -21,10 +21,8 @@
         <p class="hint">The token stays only in this browser session. Your existing cronjob should keep calling <code>/health</code>.</p>
       </section>
 
-      <section class="panel" id="target-panel" hidden><h2>Target coordinates</h2><div id="targets" class="target-grid"></div></section>
-
       <section class="panel" id="creator-panel" hidden>
-        <div class="section-head"><div><h2>Create or update player</h2><p class="hint">Saving coordinates automatically recalculates travel times for every configured target.</p></div><button type="button" class="secondary" id="clear-creator">New player</button></div>
+        <div class="section-head"><div><h2>Create or update player</h2><p class="hint">Target coordinates are fixed. Saving creator coordinates automatically recalculates every travel time.</p></div><button type="button" class="secondary" id="clear-creator">New player</button></div>
         <form id="creator-form" class="grid creator-grid">
           <label>Side<select name="side"><option value="ally">Ally</option><option value="enemy">Enemy</option></select></label>
           <label>Name<input name="name" maxlength="80" required></label>

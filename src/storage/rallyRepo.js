@@ -207,26 +207,6 @@ export const rallyRepo = {
     }));
   },
 
-  async listTargetCoordinates({ guildId }) {
-    const rows = await all(
-      `SELECT target, coord_x, coord_y FROM target_coordinates WHERE guild_id=? ORDER BY target ASC`,
-      [guildId]
-    );
-    return rows.map(row => ({ target: row.target, coord_x: Number(row.coord_x), coord_y: Number(row.coord_y) }));
-  },
-
-  async setTargetCoordinates({ guildId, target, coordX, coordY }) {
-    await run(
-      `
-      INSERT INTO target_coordinates (guild_id, target, coord_x, coord_y)
-      VALUES (?, ?, ?, ?)
-      ON CONFLICT(guild_id, target)
-      DO UPDATE SET coord_x=excluded.coord_x, coord_y=excluded.coord_y
-      `,
-      [guildId, target, coordX, coordY]
-    );
-  },
-
   async setDefaultTarget({ guildId, creatorId, target }) {
     await run(
       `UPDATE creators SET default_target=? WHERE guild_id=? AND id=?`,

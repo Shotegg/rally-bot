@@ -53,13 +53,6 @@ export async function initDb() {
       UNIQUE(guild_id, creator_id, target)
     );
 
-    CREATE TABLE IF NOT EXISTS target_coordinates (
-      guild_id TEXT NOT NULL,
-      target TEXT NOT NULL,
-      coord_x DOUBLE PRECISION NOT NULL,
-      coord_y DOUBLE PRECISION NOT NULL,
-      PRIMARY KEY (guild_id, target)
-    );
   `);
 
   await exec(`ALTER TABLE creators ADD COLUMN IF NOT EXISTS enabled INTEGER NOT NULL DEFAULT 1`);

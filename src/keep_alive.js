@@ -2,7 +2,7 @@ import http from 'node:http';
 
 import { config } from './config.js';
 import { calculateMarchTime } from './domain/marchTime.js';
-import { TARGETS, normalizeTargetName } from './domain/targets.js';
+import { TARGETS, TARGET_COORDINATES, normalizeTargetName } from './domain/targets.js';
 import { rallyRepo } from './storage/rallyRepo.js';
 
 const JSON_LIMIT = 64 * 1024;
@@ -62,23 +62,22 @@ function selectGuildId(value) {
 
 async function refreshCreatorTimings(guildId, creator) {
   if (!Number.isFinite(creator.coord_x) || !Number.isFinite(creator.coord_y) || creator.speed_buff <= 0) return;
-  const targets = await rallyRepo.listTargetCoordinates({ guildId });
-  await Promise.all(targets.map(async target => {
+  await Promise.all(TARGETS.map(async target => {
+    const coordinates = TARGET_COORDINATES[target];
     const travelSec = calculateMarchTime({
       fromX: creator.coord_x, fromY: creator.coord_y,
-      toX: target.coord_x, toY: target.coord_y,
+      toX: coordinates.x, toY: coordinates.y,
       speedBuff: creator.speed_buff
     });
-    if (travelSec != null) await rallyRepo.setTiming({ guildId, creatorId: creator.id, target: target.target, travelSec });
+    if (travelSec != null) await rallyRepo.setTiming({ guildId, creatorId: creator.id, target, travelSec });
   }));
 }
 
 async function dashboard(guildId) {
-  const [allies, enemies, timings, targetCoordinates] = await Promise.all([
+  const [allies, enemies, timings] = await Promise.all([
     rallyRepo.listCreators({ guildId, side: 'ally' }),
     rallyRepo.listCreators({ guildId, side: 'enemy' }),
-    rallyRepo.listAllTimings({ guildId }),
-    rallyRepo.listTargetCoordinates({ guildId })
+    rallyRepo.listAllTimings({ guildId })
   ]);
   const timingsByCreator = new Map();
   timings.forEach(timing => {
@@ -89,10 +88,7 @@ async function dashboard(guildId) {
   return {
     guildId,
     ownKingdomId: config.ownKingdomId,
-    targets: TARGETS.map(target => ({
-      target,
-      ...(targetCoordinates.find(row => row.target === target) || { coord_x: null, coord_y: null })
-    })),
+    targets: TARGETS.map(target => ({ target, ...TARGET_COORDINATES[target] })),
     allies: allies.map(withTimings),
     enemies: enemies.map(withTimings)
   };
@@ -135,21 +131,6 @@ async function handleApi(req, res, url, origin) {
     });
     await refreshCreatorTimings(guildId, creator);
     return send(res, 200, { creator }, origin);
-  }
-
-  if (req.method === 'PUT' && url.pathname === '/api/targets') {
-    const body = await readJson(req);
-    const target = normalizeTargetName(body.target);
-    const coordX = finiteOrNull(body.coordX);
-    const coordY = finiteOrNull(body.coordY);
-    if (!target || coordX == null || coordY == null) return send(res, 400, { error: 'Target and both coordinates are required.' }, origin);
-    await rallyRepo.setTargetCoordinates({ guildId, target, coordX, coordY });
-    const creators = [
-      ...await rallyRepo.listCreators({ guildId, side: 'ally' }),
-      ...await rallyRepo.listCreators({ guildId, side: 'enemy' })
-    ];
-    await Promise.all(creators.map(creator => refreshCreatorTimings(guildId, creator)));
-    return send(res, 200, { target, coordX, coordY }, origin);
   }
 
   if (req.method === 'DELETE' && url.pathname === '/api/creators') {

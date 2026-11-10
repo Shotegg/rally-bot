@@ -1,6 +1,14 @@
 export const TARGETS = ['South Turret', 'West Turret', 'East Turret', 'North Turret', 'Castle'];
 export const NO_TARGET = 'No target';
 
+export const TARGET_COORDINATES = {
+  'West Turret': { x: 594, y: 604 },
+  'South Turret': { x: 594, y: 594 },
+  'East Turret': { x: 604, y: 594 },
+  'North Turret': { x: 604, y: 604 },
+  Castle: { x: 599, y: 599 }
+};
+
 // Legacy import aliases: map old/alternate names to the current TARGETS names.
 // Example:
 // 'Old Turret A': 'Turret 1'

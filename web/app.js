@@ -28,21 +28,13 @@ function render() {
   $('#own-kingdom').textContent = data.ownKingdomId;
   $('#own-kingdom-import').textContent = data.ownKingdomId;
   $('#default-target').innerHTML = '<option value="">None</option>' + data.targets.map(t => `<option>${t.target}</option>`).join('');
-  $('#targets').innerHTML = data.targets.map(t => `<article class="target-card"><h3>${t.target}</h3><form data-target="${t.target}"><input name="coordX" type="number" step="any" placeholder="X" value="${t.coord_x ?? ''}" required><input name="coordY" type="number" step="any" placeholder="Y" value="${t.coord_y ?? ''}" required><button>Save</button></form></article>`).join('');
-  $('#targets').querySelectorAll('form').forEach(form => form.addEventListener('submit', saveTarget));
   $('#lists').innerHTML = [['Allies', data.allies], ['Enemies', data.enemies]].map(([title, creators]) => `<section class="panel list"><h2>${title} <span class="muted">(${creators.length})</span></h2>${creators.length ? creators.map(creator => `<article class="row"><strong>${creator.name}</strong><span>${creator.player_id || '—'}</span><span>${creator.discord_user_id ? `@${creator.discord_user_id}` : 'no Discord link'}</span><span>${creator.coord_x ?? '—'}, ${creator.coord_y ?? '—'}</span><span class="timings">${data.targets.map(t => `${t.target}: ${seconds(creator.timings[t.target])}`).join(' · ')}</span><button data-edit='${encodeURIComponent(JSON.stringify(creator))}' class="secondary">Edit</button><button data-delete="${creator.side}|${creator.name}" class="secondary">Delete</button></article>`).join('') : '<p class="muted">No players yet.</p>'}</section>`).join('');
   $('#lists').querySelectorAll('[data-edit]').forEach(button => button.addEventListener('click', () => editCreator(JSON.parse(decodeURIComponent(button.dataset.edit)))));
   $('#lists').querySelectorAll('[data-delete]').forEach(button => button.addEventListener('click', () => deleteCreator(button.dataset.delete)));
-  ['target-panel','creator-panel','import-panel','lists'].forEach(id => $(`#${id}`).hidden = false);
+  ['creator-panel','import-panel','lists'].forEach(id => $(`#${id}`).hidden = false);
 }
 
 async function load() { data = await request('/api/dashboard'); render(); setStatus('Connected.'); }
-
-async function saveTarget(event) {
-  event.preventDefault(); const form = event.currentTarget;
-  try { await request('/api/targets', { method:'PUT', body:JSON.stringify({ target:form.dataset.target, coordX:form.coordX.value, coordY:form.coordY.value }) }); await load(); }
-  catch (error) { setStatus(error.message, true); }
-}
 
 function editCreator(creator) {
   const form = $('#creator-form');
