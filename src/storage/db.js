@@ -34,6 +34,8 @@ export async function initDb() {
       coord_x DOUBLE PRECISION,
       coord_y DOUBLE PRECISION,
       speed_buff DOUBLE PRECISION NOT NULL DEFAULT 1,
+      pet_bonus_percent DOUBLE PRECISION NOT NULL DEFAULT 30,
+      pets_until BIGINT NOT NULL DEFAULT 0,
       side TEXT NOT NULL CHECK(side IN ('ally','enemy')),
       buffer_sec INTEGER NOT NULL DEFAULT 0,
       enabled INTEGER NOT NULL DEFAULT 1,
@@ -62,6 +64,8 @@ export async function initDb() {
   await exec(`ALTER TABLE creators ADD COLUMN IF NOT EXISTS coord_x DOUBLE PRECISION`);
   await exec(`ALTER TABLE creators ADD COLUMN IF NOT EXISTS coord_y DOUBLE PRECISION`);
   await exec(`ALTER TABLE creators ADD COLUMN IF NOT EXISTS speed_buff DOUBLE PRECISION NOT NULL DEFAULT 1`);
+  await exec(`ALTER TABLE creators ADD COLUMN IF NOT EXISTS pet_bonus_percent DOUBLE PRECISION NOT NULL DEFAULT 30`);
+  await exec(`ALTER TABLE creators ADD COLUMN IF NOT EXISTS pets_until BIGINT NOT NULL DEFAULT 0`);
   await exec(`ALTER TABLE creators ADD COLUMN IF NOT EXISTS default_target TEXT NOT NULL DEFAULT ''`);
   await exec(`ALTER TABLE creators ADD COLUMN IF NOT EXISTS counter_targets_json TEXT NOT NULL DEFAULT '{}'`);
   await exec(`ALTER TABLE creators ADD COLUMN IF NOT EXISTS enemy_allies_json TEXT NOT NULL DEFAULT '[]'`);

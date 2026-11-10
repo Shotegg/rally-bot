@@ -31,6 +31,8 @@ function mapCreatorRow(row) {
     coord_x: row.coord_x == null ? null : Number(row.coord_x),
     coord_y: row.coord_y == null ? null : Number(row.coord_y),
     speed_buff: Number(row.speed_buff ?? 1),
+    pet_bonus_percent: Number(row.pet_bonus_percent ?? 30),
+    pets_until: Number(row.pets_until ?? 0),
     default_target: row.default_target || '',
     targets: safeJsonParse(row.targets_json, []),
     counter_targets: safeJsonParse(row.counter_targets_json, {}),
@@ -48,7 +50,8 @@ export const rallyRepo = {
     playerId = '',
     coordX = null,
     coordY = null,
-    speedBuff = 1,
+    petBonusPercent = 30,
+    petsUntil = 0,
     targets = [],
     bufferSec = 0,
     enabled = true,
@@ -58,8 +61,8 @@ export const rallyRepo = {
 
     await run(
       `
-      INSERT INTO creators (guild_id, side, name, display_name, discord_user_id, player_id, coord_x, coord_y, speed_buff, buffer_sec, enabled, default_target, targets_json)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO creators (guild_id, side, name, display_name, discord_user_id, player_id, coord_x, coord_y, pet_bonus_percent, pets_until, buffer_sec, enabled, default_target, targets_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(guild_id, side, name)
       DO UPDATE SET
         display_name=excluded.display_name,
@@ -67,13 +70,14 @@ export const rallyRepo = {
         player_id=excluded.player_id,
         coord_x=excluded.coord_x,
         coord_y=excluded.coord_y,
-        speed_buff=excluded.speed_buff,
+        pet_bonus_percent=excluded.pet_bonus_percent,
+        pets_until=excluded.pets_until,
         buffer_sec=excluded.buffer_sec,
         enabled=excluded.enabled,
         default_target=excluded.default_target,
         targets_json=excluded.targets_json
       `,
-      [guildId, side, name, displayName || name, discordUserId || '', playerId || '', coordX, coordY, speedBuff, bufferSec, toBool01(enabled), defaultTarget, JSON.stringify(t)]
+      [guildId, side, name, displayName || name, discordUserId || '', playerId || '', coordX, coordY, petBonusPercent, petsUntil, bufferSec, toBool01(enabled), defaultTarget, JSON.stringify(t)]
     );
 
     return this.getCreatorByName({ guildId, side, name });

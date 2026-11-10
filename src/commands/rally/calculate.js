@@ -1,5 +1,6 @@
 import { rallyRepo } from '../../storage/rallyRepo.js';
 import { calculateAllSendTimes, formatUtcTime } from '../../domain/calc.js';
+import { creatorTravelTime } from '../../domain/creatorTiming.js';
 import { addTargetOption } from './shared.js';
 
 export function registerCalculate(builder) {
@@ -21,9 +22,13 @@ export async function handleCalculate(interaction) {
     ? await rallyRepo.listCreatorsWithDefaultTarget({ guildId, side: 'ally', target: targetFilter })
     : await rallyRepo.listCreatorsWithDefaultTargets({ guildId, side: 'ally' });
 
+  const timedCreators = creators.map(creator => ({
+    ...creator,
+    travel_sec: creatorTravelTime(creator, creator.default_target)
+  }));
   const results = calculateAllSendTimes({
     now,
-    creators
+    creators: timedCreators
   });
 
   const lines = results.length

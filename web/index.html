@@ -29,9 +29,10 @@
           <label>Display name<input name="displayName" maxlength="80"></label>
           <label>MightPulse player ID<input name="playerId" inputmode="numeric"></label>
           <label>Discord user ID<input name="discordUserId" inputmode="numeric" placeholder="for @mention"></label>
-          <label>X coordinate<input name="coordX" type="number" step="any"></label>
-          <label>Y coordinate<input name="coordY" type="number" step="any"></label>
-          <label>Speed buff<input name="speedBuff" type="number" step="0.01" min="0.01" value="1"></label>
+          <label>Coordinates<input name="coordinates" placeholder="600,590"></label>
+          <label>Pet bonus %<input name="petBonusPercent" type="number" min="0" value="30"></label>
+          <label>Pet countdown<input name="petCountdown" placeholder="02:00:00" value="02:00:00"></label>
+          <label class="check">Pets active<input name="petsActive" type="checkbox"></label>
           <label>Buffer seconds<input name="bufferSec" type="number" min="0" value="0"></label>
           <label>Default target<select name="defaultTarget" id="default-target"><option value="">None</option></select></label>
           <label class="check">Enabled<input name="enabled" type="checkbox" checked></label>

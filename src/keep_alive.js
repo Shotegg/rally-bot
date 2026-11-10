@@ -1,7 +1,7 @@
 import http from 'node:http';
 
 import { config } from './config.js';
-import { calculateMarchTime } from './domain/marchTime.js';
+import { creatorTravelTime } from './domain/creatorTiming.js';
 import { TARGETS, TARGET_COORDINATES, normalizeTargetName } from './domain/targets.js';
 import { rallyRepo } from './storage/rallyRepo.js';
 
@@ -55,20 +55,20 @@ function validDiscordUserId(value) {
   return match ? match[1] : '';
 }
 
+function parseCoordinates(value) {
+  const match = String(value || '').trim().match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+  return match ? { x: Number(match[1]), y: Number(match[2]) } : null;
+}
+
 function selectGuildId(value) {
   const guildId = String(value || config.guildIds[0] || '');
   return config.guildIds.includes(guildId) ? guildId : '';
 }
 
 async function refreshCreatorTimings(guildId, creator) {
-  if (!Number.isFinite(creator.coord_x) || !Number.isFinite(creator.coord_y) || creator.speed_buff <= 0) return;
+  if (!Number.isFinite(creator.coord_x) || !Number.isFinite(creator.coord_y)) return;
   await Promise.all(TARGETS.map(async target => {
-    const coordinates = TARGET_COORDINATES[target];
-    const travelSec = calculateMarchTime({
-      fromX: creator.coord_x, fromY: creator.coord_y,
-      toX: coordinates.x, toY: coordinates.y,
-      speedBuff: creator.speed_buff
-    });
+    const travelSec = creatorTravelTime(creator, target);
     if (travelSec != null) await rallyRepo.setTiming({ guildId, creatorId: creator.id, target, travelSec });
   }));
 }
@@ -84,7 +84,10 @@ async function dashboard(guildId) {
     if (!timingsByCreator.has(timing.creator_id)) timingsByCreator.set(timing.creator_id, {});
     timingsByCreator.get(timing.creator_id)[timing.target] = timing.travel_sec;
   });
-  const withTimings = creator => ({ ...creator, timings: timingsByCreator.get(creator.id) || {} });
+  const withTimings = creator => ({
+    ...creator,
+    timings: Object.fromEntries(TARGETS.map(target => [target, creatorTravelTime(creator, target)]))
+  });
   return {
     guildId,
     ownKingdomId: config.ownKingdomId,
@@ -110,21 +113,23 @@ async function handleApi(req, res, url, origin) {
     const side = body.side === 'enemy' ? 'enemy' : body.side === 'ally' ? 'ally' : '';
     const name = String(body.name || '').trim();
     const defaultTarget = body.defaultTarget ? normalizeTargetName(body.defaultTarget) : '';
-    const coordX = finiteOrNull(body.coordX);
-    const coordY = finiteOrNull(body.coordY);
-    const speedBuff = finiteOrNull(body.speedBuff);
+    const coordinates = parseCoordinates(body.coordinates);
+    const coordX = coordinates?.x ?? finiteOrNull(body.coordX);
+    const coordY = coordinates?.y ?? finiteOrNull(body.coordY);
+    const petBonusPercent = Math.max(0, finiteOrNull(body.petBonusPercent) ?? 30);
+    const petsUntil = Math.max(0, Math.floor(Number(body.petsUntil) || 0));
     if (!side || !name || name.length > 80 || (body.defaultTarget && !defaultTarget)) {
       return send(res, 400, { error: 'Creator side, name, or default target is invalid.' }, origin);
     }
-    if ((coordX == null) !== (coordY == null) || (speedBuff != null && speedBuff <= 0)) {
-      return send(res, 400, { error: 'Coordinates must be a complete pair and speed buff must be positive.' }, origin);
+    if ((coordX == null) !== (coordY == null)) {
+      return send(res, 400, { error: 'Coordinates must be in the form X,Y.' }, origin);
     }
     const creator = await rallyRepo.upsertCreator({
       guildId, side, name,
       displayName: String(body.displayName || '').trim(),
       discordUserId: validDiscordUserId(body.discordUserId),
       playerId: String(body.playerId || '').trim(),
-      coordX, coordY, speedBuff: speedBuff ?? 1,
+      coordX, coordY, petBonusPercent, petsUntil,
       bufferSec: Math.max(0, Math.floor(Number(body.bufferSec) || 0)),
       enabled: body.enabled !== false,
       defaultTarget

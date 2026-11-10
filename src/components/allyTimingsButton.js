@@ -1,6 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { rallyRepo } from '../storage/rallyRepo.js';
 import { calculateAgainstEnemy, formatUtcTime } from '../domain/calc.js';
+import { creatorTravelTime } from '../domain/creatorTiming.js';
 import { TARGETS } from '../domain/targets.js';
 import { resultEmbed } from '../ui/embeds.js';
 
@@ -95,22 +96,13 @@ export async function handleAllyTimingsButton(interaction) {
     return;
   }
 
-  const [enemyTiming] = await rallyRepo.listTimingsForSide({
-    guildId,
-    side: 'enemy',
-    target
-  }).then(rows => rows.filter(r => r.id === enemy.id));
-
-  if (!enemyTiming || !Number.isFinite(enemyTiming.travel_sec)) {
+  const enemyTravelSec = creatorTravelTime(enemy, target);
+  if (!Number.isFinite(enemyTravelSec)) {
     await interaction.editReply({ content: `Enemy ${enemy.name} has no timing for ${target}.` });
     return;
   }
 
-  const allies = await rallyRepo.listTimingsForSide({
-    guildId,
-    side: 'ally',
-    target
-  });
+  const allies = await rallyRepo.listCreators({ guildId, side: 'ally' });
 
   const selectedAllyNames = mode === 'enemy'
     ? new Set((enemy.enemy_allies || []).map(name => String(name).trim()).filter(Boolean))
@@ -119,7 +111,7 @@ export async function handleAllyTimingsButton(interaction) {
   const enriched = allies.map(a => ({
     name: a.discord_user_id ? `<@${a.discord_user_id}>` : a.name,
     enabled: a.enabled,
-    travel_sec: a.travel_sec,
+    travel_sec: creatorTravelTime(a, target),
     counter_enabled: mode === 'enemy'
       ? selectedAllyNames.has(a.name)
       : Boolean(a.counter_targets?.[target])
@@ -128,7 +120,7 @@ export async function handleAllyTimingsButton(interaction) {
   const now = new Date();
   const results = calculateAgainstEnemy({
     now,
-    enemy: { name: enemy.name, target, travel_sec: enemyTiming.travel_sec },
+    enemy: { name: enemy.name, target, travel_sec: enemyTravelSec },
     allies: enriched
   });
 

@@ -23,6 +23,8 @@ async function request(path, options = {}) {
 }
 
 function seconds(value) { return Number.isFinite(value) ? `${Math.floor(value / 60)}m ${String(value % 60).padStart(2, '0')}s` : '—'; }
+function formatCountdown(milliseconds) { const total = Math.max(0, Math.ceil(milliseconds / 1000)); return `${String(Math.floor(total / 3600)).padStart(2, '0')}:${String(Math.floor(total % 3600 / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`; }
+function parseCountdown(value) { const match = /^(\d{1,3}):([0-5]\d):([0-5]\d)$/.exec(String(value).trim()); return match ? Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]) : null; }
 
 function render() {
   $('#own-kingdom').textContent = data.ownKingdomId;
@@ -38,7 +40,8 @@ async function load() { data = await request('/api/dashboard'); render(); setSta
 
 function editCreator(creator) {
   const form = $('#creator-form');
-  ['side','name','displayName','playerId','discordUserId','coordX','coordY','speedBuff','bufferSec','defaultTarget'].forEach(key => { const field = form.elements[key]; const value = ({ displayName:creator.display_name, playerId:creator.player_id, discordUserId:creator.discord_user_id, coordX:creator.coord_x, coordY:creator.coord_y, speedBuff:creator.speed_buff, bufferSec:creator.buffer_sec, defaultTarget:creator.default_target })[key] ?? creator[key]; field.value = value ?? ''; });
+  ['side','name','displayName','playerId','discordUserId','coordinates','petBonusPercent','bufferSec','defaultTarget'].forEach(key => { const field = form.elements[key]; const value = ({ displayName:creator.display_name, playerId:creator.player_id, discordUserId:creator.discord_user_id, coordinates:creator.coord_x == null ? '' : `${creator.coord_x},${creator.coord_y}`, petBonusPercent:creator.pet_bonus_percent, bufferSec:creator.buffer_sec, defaultTarget:creator.default_target })[key] ?? creator[key]; field.value = value ?? ''; });
+  const active = creator.pets_until > Date.now(); form.petsActive.checked = active; form.petCountdown.value = active ? formatCountdown(creator.pets_until - Date.now()) : '02:00:00';
   form.enabled.checked = creator.enabled; form.scrollIntoView({ behavior:'smooth', block:'center' });
 }
 
@@ -56,10 +59,12 @@ $('#connection-form').addEventListener('submit', async event => {
 
 $('#creator-form').addEventListener('submit', async event => {
   event.preventDefault(); const form = event.currentTarget; const body = Object.fromEntries(new FormData(form)); body.enabled = form.enabled.checked;
-  try { await request('/api/creators', { method:'PUT', body:JSON.stringify(body) }); form.reset(); form.speedBuff.value = '1'; form.bufferSec.value = '0'; form.enabled.checked = true; await load(); }
+  const countdown = parseCountdown(form.petCountdown.value); if (form.petsActive.checked && countdown === null) return setStatus('Pet countdown must be HH:MM:SS.', true);
+  body.petsUntil = form.petsActive.checked ? Date.now() + countdown * 1000 : 0;
+  try { await request('/api/creators', { method:'PUT', body:JSON.stringify(body) }); form.reset(); form.petBonusPercent.value = '30'; form.petCountdown.value = '02:00:00'; form.bufferSec.value = '0'; form.enabled.checked = true; await load(); }
   catch (error) { setStatus(error.message, true); }
 });
-$('#clear-creator').addEventListener('click', () => { const form = $('#creator-form'); form.reset(); form.speedBuff.value = '1'; form.bufferSec.value = '0'; form.enabled.checked = true; });
+$('#clear-creator').addEventListener('click', () => { const form = $('#creator-form'); form.reset(); form.petBonusPercent.value = '30'; form.petCountdown.value = '02:00:00'; form.bufferSec.value = '0'; form.enabled.checked = true; });
 $('#opponent-kingdom').value = localStorage.getItem('rallyOpponentKingdom') || '';
 $('#opponent-kingdom').addEventListener('change', event => localStorage.setItem('rallyOpponentKingdom', event.target.value));
 if (apiBase && token) load().catch(error => setStatus(error.message, true));
