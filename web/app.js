@@ -83,8 +83,17 @@ async function importSelected(event) {
   event.preventDefault();
   const selected = [...new FormData(event.currentTarget).getAll('player')].map(index => preview[Number(index)]).filter(Boolean);
   if (!selected.length) return setStatus('Select at least one player.', true);
-  try { const result = await request('/api/mightpulse/import', { method: 'POST', body: JSON.stringify({ side: $('#mystic-side').value, candidates: selected }) }); setStatus(`Imported ${result.saved.length} player(s).`); await load(); }
-  catch (error) { setStatus(error.message, true); }
+  const button = event.currentTarget.querySelector('button'); button.disabled = true; button.textContent = 'Importing…';
+  try {
+    const result = await request('/api/mightpulse/import', { method: 'POST', body: JSON.stringify({ side: $('#mystic-side').value, candidates: selected }) });
+    const detail = result.skipped?.length ? ` Skipped: ${result.skipped.join(', ')}.` : '';
+    $('#mystic-preview').insertAdjacentHTML('afterbegin', `<p class="import-result">Imported ${result.saved.length} player(s).${escapeHtml(detail)}</p>`);
+    setStatus(`Imported ${result.saved.length} player(s).`);
+    await load();
+  } catch (error) {
+    $('#mystic-preview').insertAdjacentHTML('afterbegin', `<p class="import-error">Import failed: ${escapeHtml(error.message)}</p>`);
+    setStatus(error.message, true);
+  } finally { button.disabled = false; button.textContent = `Import selected as ${$('#mystic-side').value === 'ally' ? 'Allies' : 'Enemies'}`; }
 }
 
 $('#connection-form').addEventListener('submit', async event => { event.preventDefault(); apiBase = $('#api-url').value.replace(/\/$/, ''); token = $('#api-token').value; sessionStorage.setItem('rallyApiBase', apiBase); sessionStorage.setItem('rallyDashboardToken', token); try { await load(); } catch (error) { setStatus(error.message, true); } });

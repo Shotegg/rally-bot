@@ -252,12 +252,16 @@ async function handleApi(req, res, url, origin) {
     const candidates = Array.isArray(body.candidates) ? body.candidates.slice(0, 10) : [];
     if (!side || !candidates.length) return send(res, 400, { error: 'Side and at least one selected player are required.' }, origin);
     const saved = [];
+    const skipped = [];
     for (const candidate of candidates) {
       const name = String(candidate.name || '').trim();
       const playerId = String(candidate.playerId || '').trim();
       const coordX = finiteOrNull(candidate.coordX);
       const coordY = finiteOrNull(candidate.coordY);
-      if (!name || !playerId || (coordX == null) !== (coordY == null)) continue;
+      if (!name || !playerId || (coordX == null) !== (coordY == null)) {
+        skipped.push(name || playerId || 'Unnamed player');
+        continue;
+      }
       const existing = await rallyRepo.getCreatorByName({ guildId, side, name });
       const creator = await rallyRepo.upsertCreator({
         guildId, side, name,
@@ -273,7 +277,7 @@ async function handleApi(req, res, url, origin) {
       await refreshCreatorTimings(guildId, creator);
       saved.push(creator.name);
     }
-    return send(res, 200, { saved });
+    return send(res, 200, { saved, skipped });
   }
 
   if (req.method === 'DELETE' && url.pathname === '/api/creators') {
