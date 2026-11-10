@@ -122,6 +122,9 @@ function rankingRows(payload) {
     }
     const preferred = [
       value.boards?.mystic_trial,
+      Array.isArray(value.boards)
+        ? value.boards.find(board => board?.key === 'mystic_trial' || board?.board === 'mystic_trial' || board?.slug === 'mystic_trial')
+        : value.boards,
       value.board?.mystic_trial,
       value.mystic_trial,
       value.ranks,
