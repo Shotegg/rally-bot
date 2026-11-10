@@ -75,7 +75,7 @@ function resetCreator() {
 function renderPreview(result) {
   preview = result.candidates || [];
   const box = $('#mystic-preview');
-  if (!preview.length) { box.innerHTML = '<p class="muted">No Mystic Trial players returned for that kingdom.</p>'; return; }
+  if (!preview.length) { box.innerHTML = `<p class="muted">No Mystic Trial players returned for that kingdom.${result.diagnostic ? ` ${escapeHtml(result.diagnostic)}` : ''}</p>`; return; }
   box.innerHTML = `<p class="hint">Kingdom ${escapeHtml(result.kingdomId)} · select players to import. Coordinates with “stale” may be up to one hour old.</p><form id="import-selected"><div class="preview-list">${preview.map((player, index) => `<label class="preview-row"><input type="checkbox" name="player" value="${index}" checked><strong>${escapeHtml(player.name)}</strong><span>ID ${escapeHtml(player.playerId)}</span><span>${player.coordX ?? '—'}, ${player.coordY ?? '—'}</span><span>${player.fresh === false ? 'stale' : 'fresh / unknown'}</span></label>`).join('')}</div><button>Import selected as ${$('#mystic-side').value === 'ally' ? 'Allies' : 'Enemies'}</button></form>`;
   $('#import-selected').addEventListener('submit', importSelected);
 }

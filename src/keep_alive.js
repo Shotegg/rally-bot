@@ -107,13 +107,50 @@ async function mightPulse(path) {
   return body;
 }
 
+function rankingRows(payload) {
+  const seen = new Set();
+  function visit(value) {
+    if (!value || typeof value !== 'object' || seen.has(value)) return [];
+    seen.add(value);
+    if (Array.isArray(value)) {
+      if (value.some(row => row && typeof row === 'object' && (row.governor_id || row.fid || row.uid))) return value;
+      for (const item of value) {
+        const rows = visit(item);
+        if (rows.length) return rows;
+      }
+      return [];
+    }
+    const preferred = [
+      value.boards?.mystic_trial,
+      value.board?.mystic_trial,
+      value.mystic_trial,
+      value.ranks,
+      value.entries,
+      value.players,
+      value.leaderboard,
+      value.board,
+      value.data
+    ];
+    for (const candidate of preferred) {
+      const rows = visit(candidate);
+      if (rows.length) return rows;
+    }
+    return [];
+  }
+  return visit(payload);
+}
+
 async function mysticTrialCandidates(kingdomId) {
   if (!/^\d+$/.test(String(kingdomId))) throw new Error('Kingdom ID must be numeric.');
   const ranking = await mightPulse(`/kingdoms/${kingdomId}/ranks?board=mystic_trial&limit=10`);
-  const board = ranking.ranks || ranking.players || ranking.leaderboard || ranking.board || [];
-  const ranked = Array.isArray(board) ? board.slice(0, 10) : [];
+  const ranked = rankingRows(ranking).slice(0, 10);
   const ids = ranked.map(player => player.governor_id || player.fid).filter(Boolean);
-  if (!ids.length) return { kingdomId: String(kingdomId), candidates: [], fresh: null };
+  if (!ids.length) return {
+    kingdomId: String(kingdomId),
+    candidates: [],
+    fresh: null,
+    diagnostic: `MightPulse returned no player rows. Response fields: ${Object.keys(ranking).join(', ') || '(none)'}`
+  };
   const details = await mightPulse(`/players?ids=${encodeURIComponent(ids.join(','))}&include=base`);
   const players = details.players || [];
   const byGovernorId = new Map(players.map(entry => [String(entry.governor_id || entry.fid), entry.player || entry]));
