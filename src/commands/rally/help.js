@@ -11,7 +11,7 @@ export async function handleHelp(interaction) {
   await interaction.deferReply({ ephemeral: true });
   const lines = [
     'Creator, enemy and march-time data are managed from the web page.',
-    'Use `/rally list` and `/rally info` to view stored creators and timings.',
+    'Use `/rally info name:<name> side:<ally|enemy>` for one creator, or `/rally info target:<target>` for all march times to a target.',
     'Use `/rally calculate` for ally send times.',
     'Use the enemy matrix buttons from `/rally enemies` for enemy-based counter timings.',
     'Use `/rally export` to download the current data.',
