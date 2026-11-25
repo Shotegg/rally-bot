@@ -3,6 +3,7 @@ import { config } from './config.js';
 import { initDb } from './storage/db.js';
 import { rallyCommand } from './commands/rally/index.js';
 import { handleAllyTimingsButton, handleEnemyModeButton } from './components/allyTimingsButton.js';
+import { handleCalculateTargetButton } from './commands/rally/calculate.js';
 import { startKeepAlive } from './keep_alive.js';
 
 async function registerCommands() {
@@ -47,6 +48,11 @@ async function main() {
       }
 
       if (interaction.isButton()) {
+        if (interaction.customId.startsWith('calculateTarget:')) {
+          await handleCalculateTargetButton(interaction);
+          return;
+        }
+
         if (interaction.customId.startsWith('enemyMode:')) {
           await handleEnemyModeButton(interaction);
           return;
